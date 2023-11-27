@@ -28,11 +28,14 @@ def Wtilde(Xtilde_v, sz_v, gamma2_v):
 def Xtilde(X, z):
     return X[:, z == 1]
 
+def sigma2(T_v,Ry_v,X):
+    return (1/(Ry-1)) * sum((beta @ X.T)**2)/T
 
 def R2q(X, z, n):
     def posteriorR2q(q_v, R2_v, X, z, beta, sigma2_v):
         bz = beta @ np.diag(z) @ beta.T
         sz_v = sz(z)
+        sigma2_v= sigma2(T,Ry,X)
         return np.exp((-1 / (2 * sigma2_v)) * (k * vbar(X) * q_v * ((1 - R2_v) / R2_v) * bz)) * q_v ** (
                 3 / 2 * sz_v + a - 1) * (
                        1 - q_v) ** (k - sz_v + b - 1) * R2_v ** (A - 1 - sz_v / 2) * (1 - R2_v) ** (sz_v / 2 + B - 1)
