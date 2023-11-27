@@ -14,7 +14,7 @@ def sz(z):
 
 
 def vbar(X):
-    raise NotImplementedError
+    return np.mean(np.var(X, axis=0))
 
 
 def gamma2(R2_v, q_v, X):
@@ -33,8 +33,9 @@ def R2q(X, z, n):
     def posteriorR2q(q_v, R2_v, X, z, beta, sigma2_v):
         bz = beta @ np.diag(z) @ beta.T
         sz_v = sz(z)
-        return np.exp((-1 / (2 * sigma2_v)) * (k * vbar(X) * q_v * ((1 - R2_v) / R2_v) * bz)) * q_v ** (3 * sz_v / 2) * (
-                    1 - q_v) ** (k - sz_v) * R2_v ** (-sz_v / 2) * (1 - R2_v) ** (sz_v / 2)
+        return np.exp((-1 / (2 * sigma2_v)) * (k * vbar(X) * q_v * ((1 - R2_v) / R2_v) * bz)) * q_v ** (
+                3 / 2 * sz_v + a - 1) * (
+                       1 - q_v) ** (k - sz_v + b - 1) * R2_v ** (A - 1 - sz_v / 2) * (1 - R2_v) ** (sz_v / 2 + B - 1)
 
     grid_q = [i / 1000 for i in range(1, 100)] + [i / 100 for i in range(10, 90)] + [i / 1000 for i in range(900, 1000)]
     grid_R2 = [i / 1000 for i in range(1, 100)] + [i / 100 for i in range(10, 90)] + [i / 1000 for i in
@@ -47,20 +48,21 @@ def R2q(X, z, n):
     R = []
 
     for j in range(n):
-        w_r = [posterior(i, q_, X, z) for i in grid_R2]
-        s = sum(w_r)
+        w_r = [posteriorR2q(i, q_, X, z) for i in grid_R2]
+        s = np.sum(w_r)
         w_r = [i / s for i in w_r]
-        cdf_r = list(np.cumsum(w_r))
+        cdf_r = np.cumsum(w_r)
         u = np.random.uniform(0, 1)
-        R_ = grid_R2[cdf_r.index(min(n for n in cdf_r if n > u))]
+        R_ = grid_R2[np.argmax(cdf_r > u)]
         R.append(R_)
 
-        w_q = [posterior(R_, i, X, z) for i in grid_q]
-        s = sum(w_q)
+        w_q = [posteriorR2q(R_, i, X, z) for i in grid_q]
+        s = np.sum(w_q)
         w_q = [i / s for i in w_q]
-        cdf_q = list(np.cumsum(w_q))
+        cdf_q = np.cumsum(w_q)
         v = np.random.uniform(0, 1)
-        q_ = grid_q[cdf_q.index(min(n for n in cdf_q if n > v))]
+        q_ = grid_q[np.argmax(cdf_q > v)]
+
         q.append(q_)
     return list(zip(q, R))
 
@@ -69,7 +71,7 @@ def betahat(Wtildeinv_v, Xtilde_v, Y):
     return Wtildeinv_v @ Xtilde_v.T @ Y
 
 
-def z(Y, U, X, R2_v, q_v):
+def z(Y, X, R2_v, q_v):
     def pdf(z):
         sz_v = sz(z)
         gamma2_v = gamma2(R2_v, q_v, X)
@@ -89,11 +91,11 @@ def z(Y, U, X, R2_v, q_v):
         return pdf(z) / (q_v * pdf(z_copy1) + (1 - q_v) * pdf(z_copy0))
 
 
-def sigma2(Y, U, X, R2, q, z):
+def sigma2(Y, X, R2, q, z):
     # rayane
     raise NotImplementedError
 
 
-def betatilde(Y, U, X, R2, q, sigma2, z):
+def betatilde(Y, X, R2, q, sigma2, z):
     # rayane
     raise NotImplementedError
