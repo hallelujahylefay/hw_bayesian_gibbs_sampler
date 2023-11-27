@@ -116,7 +116,7 @@ def z(Y, X, R2_v, q_v):
     return gibbs
 
 
-def sigma2(Y, X, R2_v, q_v, z, gamma2):
+def sigma2(Y, X, R2_v, q_v, z):
     sz_v = sz(z)
     gamma2_v = gamma2(R2_v, q_v, X)
     Xtilde_v = Xtilde(X, z)
