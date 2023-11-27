@@ -1,6 +1,8 @@
 import numpy as np
 from scipy.stats import gamma
 from scipy.stats import multivariate_normal as mnormal
+from scipy.special import gamma, gammaincc, comb
+
 
 k = 100
 T = 200
@@ -51,28 +53,43 @@ def R2q(X, z):
     grid_R2 = [i / 1000 for i in range(1, 100)] + [i / 100 for i in range(10, 90)] + [i / 1000 for i in
                                                                                       range(900, 1000)]
 
+    def inc_gamma(a, x):
+        return gamma(a)*gammaincc(a, x)
+        
     def univariate_pdf():
-        # which variable you integrate out
-        raise NotImplementedError
+        # marginal of R, integrate joint posterior which is proportionate to a sum of lower 
+        # incomplete gamma functions
+        bz = beta_v @ np.diag(z) @ beta_v.T
+        sz_v = sz(z)
+        t= 1 / (2 * sigma2_v) * (k * vbar(X) * ((1 - R2_v) / R2_v) * bz)
+        return  sum([(-1) ** i * comb( k-sz_v , i ) * inc_gamma(3 * sz_v / 2 + i + 1, t ) for i in range(k-sz_v)])
 
-    def conditional_pdf():
-        # which variable you integrate out?
-        raise NotImplementedError
-
+    def conditional_pdf(q_v,R2_v):
+        # distribution of q conditional on R2, proportionate to the joint posterior
+        bz = beta_v @ np.diag(z) @ beta_v.T
+        sz_v = sz(z)
+        return np.exp((-1 / (2 * sigma2_v)) * (k * vbar(X) * q_v * ((1 - R2_v) / R2_v) * bz)) * q_v ** (
+            3 / 2 * sz_v + a - 1) * (1 - q_v) ** (k - sz_v + b - 1) 
     # initial values for q and R2
-    q_ = 0.9
-    R_ = 0.1
+    q_ = grid_q[np.random.random_integers(0,len(grid_q))]
+    R_ = grid_R2[np.random.random_integers(0,len(grid_R2))]
+
 
     def invCDF(pdf, grid, u):
-        weights = pdf(grid)
+        weights = [pdf(i) for i in grid]
         normalize_constant = np.sum(weights)
         weights /= normalize_constant
         cdf = np.cumsum(weights)
         return grid[np.argmax(cdf > u)]
 
     def sampleqR():
-        # use of invCDF two times with proper pdfs
-        raise NotImplementedError
+        u=np.random.uniform(0,1)
+        R_=invCDF(univariate_pdf(),grid_R2,u)
+        def pdf_q(q_v):
+            return conditional_pdf(q_v,R_)
+        v=np.random.uniform(0,1)
+        q_=invCDF(pdf_q(),grid_q,v))
+        return (q_,R_)
 
     return sampleqR  # function that will be looped over to generate samples of (q, R) given X z
 
