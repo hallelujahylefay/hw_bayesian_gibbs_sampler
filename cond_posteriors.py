@@ -2,6 +2,7 @@ import numpy as np
 from scipy.stats import gamma
 from scipy.stats import multivariate_normal as mnormal
 from scipy.special import gamma, gammaincc, comb
+from simulate_data import generate_dataset
 
 
 k = 100
@@ -153,3 +154,6 @@ def betatilde(Y, X, R2_v, q_v, sigma2_v, z):
     mean = np.linalg.inv(id / gamma2_v + Xtilde_v.T @ Xtilde_v) @ Xtilde_v @ Y  # Pas de U*phi
     cov = np.linalg.inv(id / gamma2_v + Xtilde_v.T @ Xtilde_v) * sigma2_v
     return mnormal(mean, cov)
+
+
+#%% 
