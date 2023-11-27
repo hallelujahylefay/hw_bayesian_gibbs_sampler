@@ -29,9 +29,40 @@ def Xtilde(X, z):
     return X[:, z == 1]
 
 
-def R2q(Y, U, X, theta, z):
-    # hamza
-    raise NotImplementedError
+def R2q(X, z, n):
+    def posteriorR2q(q_v, R2_v, X, z, beta, sigma2_v):
+        bz = beta @ np.diag(z) @ beta.T
+        sz_v = sz(z)
+        return np.exp((-1 / (2 * sigma2_v)) * (k * vbar(X) * q_v * ((1 - R2_v) / R2_v) * bz)) * q_v ** (3 * sz_v / 2) * (
+                    1 - q_v) ** (k - sz_v) * R2_v ** (-sz_v / 2) * (1 - R2_v) ** (sz_v / 2)
+
+    grid_q = [i / 1000 for i in range(1, 100)] + [i / 100 for i in range(10, 90)] + [i / 1000 for i in range(900, 1000)]
+    grid_R2 = [i / 1000 for i in range(1, 100)] + [i / 100 for i in range(10, 90)] + [i / 1000 for i in
+                                                                                      range(900, 1000)]
+    # initial values for q and R2
+    q_ = 0.9
+    R_ = 0.1
+
+    q = []
+    R = []
+
+    for j in range(n):
+        w_r = [posterior(i, q_, X, z) for i in grid_R2]
+        s = sum(w_r)
+        w_r = [i / s for i in w_r]
+        cdf_r = list(np.cumsum(w_r))
+        u = np.random.uniform(0, 1)
+        R_ = grid_R2[cdf_r.index(min(n for n in cdf_r if n > u))]
+        R.append(R_)
+
+        w_q = [posterior(R_, i, X, z) for i in grid_q]
+        s = sum(w_q)
+        w_q = [i / s for i in w_q]
+        cdf_q = list(np.cumsum(w_q))
+        v = np.random.uniform(0, 1)
+        q_ = grid_q[cdf_q.index(min(n for n in cdf_q if n > v))]
+        q.append(q_)
+    return list(zip(q, R))
 
 
 def betahat(Wtildeinv_v, Xtilde_v, Y):
@@ -55,7 +86,7 @@ def z(Y, U, X, R2_v, q_v):
         z_copy1 = z.copy()
         z_copy0[index] = 0
         z_copy1[index] = 1
-        return pdf(z) / (q_v * pdf(z_copy1) + (1-q_v) * pdf(z_copy0))
+        return pdf(z) / (q_v * pdf(z_copy1) + (1 - q_v) * pdf(z_copy0))
 
 
 def sigma2(Y, U, X, R2, q, z):
