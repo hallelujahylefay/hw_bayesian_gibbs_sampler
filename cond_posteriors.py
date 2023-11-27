@@ -1,4 +1,7 @@
 import numpy as np
+from scipy.stats import gamma 
+from scipy.stats import multivariate_normal as mnormal
+
 
 k = 100
 T = 200
@@ -28,7 +31,7 @@ def Wtilde(Xtilde_v, sz_v, gamma2_v):
 def Xtilde(X, z):
     return X[:, z == 1]
 
-def sigma2(T_v,Ry_v,X):
+def sigma2_data(T_v,Ry_v,X): #le sigma_2 qui serviraà générer le jeu de données.
     return (1/(Ry_v-1)) * sum((beta @ X.T)**2)/T_v
 
 def R2q(X, z, n):
@@ -94,11 +97,25 @@ def z(Y, X, R2_v, q_v):
         return pdf(z) / (q_v * pdf(z_copy1) + (1 - q_v) * pdf(z_copy0))
 
 
-def sigma2(Y, X, R2, q, z):
-    # rayane
-    raise NotImplementedError
+def sigma2(Y, X, R2_v, q_v, z, gamma2):
+    sz_v = sz(z)
+    gamma2_v = gamma2(R2_v, q_v, X)
+    Xtilde_v = Xtilde(X, z)
+    Wtilde_v = Wtilde(Xtilde_v, sz_v, gamma2_v)
+    Wtildeinv_v = np.linalg.inv(Wtilde_v)
+    betahat_v = betahat(Wtildeinv_v, Xtilde_v, Y)
+    #Lorsqu'on regroupera, toute cette initialisation de variables _v ne sera évidemment à faire qu'une fois.
+    return gamma(T/2,(Y.T @ Y - betahat_v.T @ (Xtilde_v.T @ Xtilde_v + np.eye(sz_v)/gamma2_v @ betahat_v)/2)) #Ytilde=Y
+    
 
 
-def betatilde(Y, X, R2, q, sigma2, z):
+def betatilde(Y, X, R2_v, q_v, sigma2_v, z):
     # rayane
-    raise NotImplementedError
+    sz_v = sz(z)
+    gamma2_v = gamma2(R2_v, q_v, X)
+    Xtilde_v = Xtilde(X, z)
+    Xtilde_v=Xtilde(X,z)
+    mean=np.linalg.inv(np.eye(sz_v)/gamma2_v + Xtilde_v.T @ Xtilde_v ) @ Xtilde_v@Y #Pas de U*phi
+    cov=np.linalg.inv(np.eye(sz_v)/gamma2_v + Xtilde_v.T @ Xtilde_v )*sigma2_v
+    return mnormal(mean,cov)
+
