@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd 
 import random 
+from scipy.stats import zscore
 
 k = 100
 T = 200
@@ -27,6 +28,9 @@ s ou Ry qui change de valeur (ou les deux)
 Et ainsi de suite jusqu'à avoir couvert toutes les valeurs possibles du couple (s,Ry)
 
 """    
+
+
+
 def X_data(rho=0.75):
     toeplitz_covariance_matrix = np.array([[rho ** abs(i - j) for i in range(k)] for j in range(k)])
     np.linalg.cholesky(toeplitz_covariance_matrix) @ np.random.normal(size=(k, T))
@@ -68,6 +72,12 @@ def generate_dataset(s_list=[5,10,100],Ry_list=[0.2,0.25,0.5],no_datasets=100):
                 beta=beta_data(s)
                 epsilon=epsilon_data(Ry,beta,X)
                 Y=Y_data(X,beta,epsilon)
+                
+                X=zscore(X)
+                beta=zscore(beta)
+                epsilon=zscore(epsilon)
+                Y=zscore(Y)
+                #we standardize the data, column by column before putting it in our dataset.
                 dataset.loc["Dataset " +str(i+1)]=[X,beta,epsilon,Y]
             datasets[(s,Ry)]=dataset     
 
