@@ -29,6 +29,10 @@ def Xtilde(X, z):
     return X[:, z == 1]
 
 
+def betahat(Wtildeinv_v, Xtilde_v, Y):
+    return Wtildeinv_v @ Xtilde_v.T @ Y
+
+
 def R2q(X, z, n):
     def posteriorR2q(q_v, R2_v, X, z, beta, sigma2_v):
         bz = beta @ np.diag(z) @ beta.T
@@ -67,10 +71,6 @@ def R2q(X, z, n):
     return list(zip(q, R))
 
 
-def betahat(Wtildeinv_v, Xtilde_v, Y):
-    return Wtildeinv_v @ Xtilde_v.T @ Y
-
-
 def z(Y, X, R2_v, q_v):
     def pdf(z):
         sz_v = sz(z)
@@ -79,16 +79,35 @@ def z(Y, X, R2_v, q_v):
         Wtilde_v = Wtilde(Xtilde_v, sz_v, gamma2_v)
         Wtildeinv_v = np.linalg.inv(Wtilde_v)
         betahat_v = betahat(Wtildeinv_v, Xtilde_v, Y)
-        q_v ** sz_v * (1 - q_v) ** (k - sz_v) * (1 / gamma2_v) ** (sz_v / 2) * np.linalg.det(Wtildeinv_v) ** (1 / 2) \
-        * (Y.T @ Y - betahat_v.T @ Wtilde_v @ betahat_v) ** (-T / 2)
+        p = q_v ** sz_v * (1 - q_v) ** (k - sz_v) * (1 / gamma2_v) ** (sz_v / 2) * np.linalg.det(Wtildeinv_v) ** (1 / 2) \
+            * (Y.T @ Y - betahat_v.T @ Wtilde_v @ betahat_v) ** (-T / 2)
+        return p
 
     def pdf_exclusion(index, z):
-        # not optimal
-        z_copy0 = z.copy()
-        z_copy1 = z.copy()
-        z_copy0[index] = 0
-        z_copy1[index] = 1
-        return pdf(z) / (q_v * pdf(z_copy1) + (1 - q_v) * pdf(z_copy0))
+        p = pdf(z)
+        z[index] = 0
+        p0 = pdf(z)
+        z[index] = 1
+        p1 = pdf(z)
+        return p / (q_v * p1 + (1 - q_v) * p0)
+
+    def iter_gibbs(z):
+        for i in range(k):
+            p = pdf_exclusion(i, z)
+            u = np.random.uniform(0, 1)
+            if u > p:
+                z[i] = 0
+            else:
+                z[i] = 1
+        return z
+
+    def gibbs(init, iter):
+        z = init
+        for i in range(iter):
+            z = iter_gibbs(z)
+        return z
+
+    return gibbs
 
 
 def sigma2(Y, X, R2, q, z):
