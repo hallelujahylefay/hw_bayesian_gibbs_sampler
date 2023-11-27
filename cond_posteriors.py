@@ -29,7 +29,7 @@ def Xtilde(X, z):
     return X[:, z == 1]
 
 def sigma2(T_v,Ry_v,X):
-    return (1/(Ry-1)) * sum((beta @ X.T)**2)/T
+    return (1/(Ry_v-1)) * sum((beta @ X.T)**2)/T_v
 
 def R2q(X, z, n):
     def posteriorR2q(q_v, R2_v, X, z, beta, sigma2_v):
