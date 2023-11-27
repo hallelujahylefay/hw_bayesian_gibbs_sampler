@@ -40,8 +40,8 @@ def betahat(Wtildeinv_v, Xtilde_v, Y):
 
 
 def R2q(X, z):
-    def posteriorR2q(q_v, R2_v, X, z, beta, sigma2_v):
-        bz = beta @ np.diag(z) @ beta.T
+    def joint_pdf(q_v, R2_v, X, z, beta_v, sigma2_v):
+        bz = beta_v @ np.diag(z) @ beta_v.T
         sz_v = sz(z)
         return np.exp((-1 / (2 * sigma2_v)) * (k * vbar(X) * q_v * ((1 - R2_v) / R2_v) * bz)) * q_v ** (
                 3 / 2 * sz_v + a - 1) * (
@@ -50,31 +50,31 @@ def R2q(X, z):
     grid_q = [i / 1000 for i in range(1, 100)] + [i / 100 for i in range(10, 90)] + [i / 1000 for i in range(900, 1000)]
     grid_R2 = [i / 1000 for i in range(1, 100)] + [i / 100 for i in range(10, 90)] + [i / 1000 for i in
                                                                                       range(900, 1000)]
+
+    def univariate_pdf():
+        # which variable you integrate out
+        raise NotImplementedError
+
+    def conditional_pdf():
+        # which variable you integrate out?
+        raise NotImplementedError
+
     # initial values for q and R2
     q_ = 0.9
     R_ = 0.1
 
-    q = []
-    R = []
+    def invCDF(pdf, grid, u):
+        weights = pdf(grid)
+        normalize_constant = np.sum(weights)
+        weights /= normalize_constant
+        cdf = np.cumsum(weights)
+        return grid[np.argmax(cdf > u)]
 
-    for j in range(n):
-        w_r = [posteriorR2q(i, q_, X, z) for i in grid_R2]
-        s = np.sum(w_r)
-        w_r = [i / s for i in w_r]
-        cdf_r = np.cumsum(w_r)
-        u = np.random.uniform(0, 1)
-        R_ = grid_R2[np.argmax(cdf_r > u)]
-        R.append(R_)
+    def sampleqR():
+        # use of invCDF two times with proper pdfs
+        raise NotImplementedError
 
-        w_q = [posteriorR2q(R_, i, X, z) for i in grid_q]
-        s = np.sum(w_q)
-        w_q = [i / s for i in w_q]
-        cdf_q = np.cumsum(w_q)
-        v = np.random.uniform(0, 1)
-        q_ = grid_q[np.argmax(cdf_q > v)]
-
-        q.append(q_)
-    return list(zip(q, R))
+    return sampleqR  # function that will be looped over to generate samples of (q, R) given X z
 
 
 def z(Y, X, R2_v, q_v):
