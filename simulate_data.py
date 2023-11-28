@@ -1,7 +1,6 @@
 import numpy as np
 import random
 from scipy.stats import zscore
-import pandas as pd
 
 k = 100
 T = 200
@@ -27,14 +26,13 @@ On recommence avec
 s ou Ry qui change de valeur (ou les deux)
 Et ainsi de suite jusqu'à avoir couvert toutes les valeurs possibles du couple (s,Ry)
 
-"""    
-
+"""
 
 
 def X_data(rho=0.75):
     toeplitz_covariance_matrix = np.array([[rho ** abs(i - j) for i in range(k)] for j in range(k)])
-    np.linalg.cholesky(toeplitz_covariance_matrix) @ np.random.normal(size=(k, T))
-    return np.linalg.cholesky(toeplitz_covariance_matrix) @ np.random.normal(size=(k, T))
+    return np.random.normal(size=(T, k)) @ np.linalg.cholesky(toeplitz_covariance_matrix)
+
 
 def beta_data(s):
     beta = np.random.normal(0, 1, size=k)
@@ -42,10 +40,10 @@ def beta_data(s):
                                     k - s)  # s nombres, choisis au hasard entre 0 et k. les coordonnées correspondantes dans beta seront rendues nulles.
     beta[zeroes_position] = 0
     return beta
-    
+
 
 def epsilon_data(Ry, beta, X):
-    s_bxt = np.sum((beta.T @ X) ** 2, axis=0) / T
+    s_bxt = np.sum((X @ beta) ** 2, axis=0) / T
     return np.random.normal(0, (1 / Ry - 1) * (1 / T) * s_bxt, size=T)
 
 
@@ -53,39 +51,38 @@ def Y_data(X, beta, epsilon):
     Y = X @ beta + epsilon
     return Y
 
-#
-# def generate_dataset(s_list=[5, 10, 100], Ry_list=[0.2, 0.25, 0.5], no_datasets=100):
-#     """
-#     Retourne les datasets correspondants à toutes les valeurs possibles du couple (s,Ry) sous forme de dictionnaire. Pour obtenir le dataset correspondant à s=a et Ry=b, il faut écrire datasets[a,b].
-#
-#
-#     """
-#
-#     # Triple liste: on itère sur les valeurs de s et de Ry pour créer un dataset
-#     datasets = {}
-#     for s in s_list:
-#         for Ry in Ry_list:
-#             dataset = pd.DataFrame(index=["Dataset " + str(i + 1) for i in range(no_datasets)],
-#                                    columns=["X", "beta", "epsilon", "Y"])
-#
-#             for i in range(no_datasets):
-#                 X = X_data()
-#                 beta = beta_data(s)
-#                 epsilon = epsilon_data(Ry, beta, X)
-#                 Y = Y_data(X, beta, epsilon)
-#
-#                 X = zscore(X)
-#                 beta = zscore(beta)
-#                 epsilon = zscore(epsilon)
-#                 Y = zscore(Y)
-#                 # we standardize the data, column by column before putting it in our dataset.
-#                 dataset.loc["Dataset " + str(i + 1)] = [X, beta, epsilon, Y]
-#             datasets[(s, Ry)] = dataset
-#
-#     return datasets
-#
-#
-# datasets = generate_dataset()
+def generate_dataset(s_list, Ry_list, no_datasets):
+    """
+    Retourne les datasets correspondants à toutes les valeurs possibles du couple (s,Ry) sous forme de dictionnaire. Pour obtenir le dataset correspondant à s=a et Ry=b, il faut écrire datasets[a,b].
+
+
+    """
+
+    # Triple liste: on itère sur les valeurs de s et de Ry pour créer un dataset
+    datasets = dict()
+    for s in s_list:
+        for Ry in Ry_list:
+            dataset = np.empty(shape=(no_datasets, T, k + 2), dtype=float)
+            beta_dataset = np.empty(shape=(no_datasets, k), dtype=float)
+            for i in range(no_datasets):
+                X = X_data()
+                beta = beta_data(s)
+                epsilon = epsilon_data(Ry, beta, X)
+                Y = Y_data(X, beta, epsilon)
+
+                X = zscore(X)
+                beta = zscore(beta)
+                epsilon = zscore(epsilon)
+                Y = zscore(Y)
+                # we standardize the data, column by column before putting it in our dataset.
+                dataset[i] = np.hstack([X, epsilon.reshape(-1, 1), Y.reshape(-1, 1)])
+                beta_dataset[i] = beta
+            datasets[(s, Ry)] = dataset, beta_dataset
+
+    return datasets
+
+
+datasets = generate_dataset(s_list, Ry_list, no_datasets)
 
 """
     
