@@ -59,7 +59,7 @@ def R2q(X, z):
     def inc_gamma(a, x):
         return gamma(a) * gammaincc(a, x)
 
-    def univariate_pdf():
+    def univariate_pdf(R2_v):
         # marginal of R, integrate joint posterior which is proportionate to a sum of lower 
         # incomplete gamma functions
         bz = beta_v @ np.diag(z) @ beta_v.T
@@ -76,22 +76,25 @@ def R2q(X, z):
     q_ = grid_q[np.random.random_integers(0, len(grid_q))]
     R_ = grid_R2[np.random.random_integers(0, len(grid_R2))]
 
-    def invCDF(pdf, grid, u):
+    def cdf(pdf, grid):
         weights = [pdf(i) for i in grid]
         normalize_constant = np.sum(weights)
         weights /= normalize_constant
         cdf = np.cumsum(weights)
+        return cdf
+
+    def invCDF(cdf, grid, u):
         return grid[np.argmax(cdf > u)]
+
+    cdfR = cdf(univariate_pdf, grid_R2)
 
     def sampleqR():
         u = np.random.uniform(0, 1)
-        R_ = invCDF(univariate_pdf(), grid_R2, u)
+        R_ = invCDF(cdfR, grid_R2, u)
 
-        def pdf_q(q_v):
-            return conditional_pdf(q_v, R_)
-
+        cdfQconditiononR = cdf(lambda q: conditional_pdf(q, R_), grid_q)
         v = np.random.uniform(0, 1)
-        q_ = invCDF(pdf_q, grid_q, v)
+        q_ = invCDF(cdfQconditiononR, grid_q, v)
         return q_, R_
 
     return sampleqR  # function that will be looped over to generate samples of (q, R) given X z
