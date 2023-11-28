@@ -6,6 +6,7 @@ from simulate_data import generate_dataset
 from scipy.integrate import quad, dblquad
 
 
+
 k = 100
 T = 200
 l = 0
@@ -43,9 +44,7 @@ def betahat(Wtildeinv_v, Xtilde_v, Y):
     return Wtildeinv_v @ Xtilde_v.T @ Y
 
 
-from scipy.integrate import quad
-from scipy.integrate import dblquad
-import numpy as np
+
 
 def R2q(X, z, sigma2_v, beta_v):
     def joint_pdf(q_v, R2_v, X, z, beta_v, sigma2_v):
