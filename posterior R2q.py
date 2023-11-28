@@ -2,6 +2,7 @@ from scipy.integrate import quad
 from scipy.integrate import dblquad
 import numpy as np
 
+
 def R2q(X, z, sigma2_v, beta_v):
     def joint_pdf(q_v, R2_v, X, z, beta_v, sigma2_v):
         bz = beta_v @ np.diag(z) @ beta_v.T
@@ -38,7 +39,7 @@ def R2q(X, z, sigma2_v, beta_v):
     R_ = grid_R2[np.random.random_integers(0,len(grid_R2))]
 
     def invCDF(pdf, grid, u):
-        weights = pdf(grid)
+        weights = [pdf(i) for i in grid]
         normalize_constant = np.sum(weights)
         weights /= normalize_constant
         cdf = np.cumsum(weights)
@@ -46,10 +47,10 @@ def R2q(X, z, sigma2_v, beta_v):
 
     def sampleqR():
         u=np.random.uniform(0,1)
-        q_=invCDF(univariate_pdf(),grid_q,u)
+        q_=invCDF(univariate_pdf,grid_q,u)
         def pdf_q(R_v):
             return conditional_pdf(q_,R_v)
-        R_=invCDF(pdf_q(),grid_R2,u)
+        R_=invCDF(pdf_q,grid_R2,u)
         return (q_,R_)
         
-    return sampleqR  # function that will be looped over to generate samples of (q, R) given X z
+    return sampleqR
