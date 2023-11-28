@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.stats import gamma
+from scipy.stats import invgamma
 from scipy.stats import multivariate_normal as mnormal
 from scipy.special import gamma, gammaincc, comb
 from simulate_data import generate_dataset
@@ -142,7 +142,7 @@ def sigma2(Y, X, R2_v, q_v, z):
     Wtildeinv_v = np.linalg.inv(Wtilde_v)
     betahat_v = betahat(Wtildeinv_v, Xtilde_v, Y)
     # Lorsqu'on regroupera, toute cette initialisation de variables _v ne sera évidemment à faire qu'une fois.
-    return gamma(T / 2, (
+    return invgamma(T / 2, (
             Y.T @ Y - betahat_v.T @ (Xtilde_v.T @ Xtilde_v + np.eye(sz_v) / gamma2_v @ betahat_v) / 2))  # Ytilde=Y
 
 
