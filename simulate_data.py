@@ -56,7 +56,7 @@ def Y_data(X,beta,epsilon):
 
 def generate_dataset(s_list=[5,10,100],Ry_list=[0.2,0.25,0.5],no_datasets=100):
     """
-    Retourne les datasets correspondants à toutes les valeurs possibles du couple (s,Ry) sous forme de dictionnaire. Pour obtenir le dataset correspondant à s=a et Ry=b, il faut écrire datasets[a,b].
+    Retourne les datasets correspondants à toutes les valeurs possibles du couple (s,Ry) sous forme de dictionnaire. Pour obtenir les 100 datasets correspondant à s=a et Ry=b, il faut écrire datasets[a,b].
     
 
     """
@@ -79,9 +79,8 @@ def generate_dataset(s_list=[5,10,100],Ry_list=[0.2,0.25,0.5],no_datasets=100):
                 Y=zscore(Y)
                 #we standardize the data, column by column before putting it in our dataset.
                 dataset.loc["Dataset " +str(i+1)]=[X,beta,epsilon,Y]
-            datasets[(s,Ry)]=dataset     
-
-            
-    return datasets
+            datasets[(s,Ry)]=dataset.to_numpy()
+               
+    return datasets #datasets[(5,.2)][11][0] renvoie la valeur de X pour le 12e dataset correspondant à s=5 et Ry=0.2. Remplacer 0 par 1, 2 ou 3 resp. pour avoir la valeur de beta, epsilon ou Y resp.
 
 datasets=generate_dataset()
