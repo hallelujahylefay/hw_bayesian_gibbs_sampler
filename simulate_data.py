@@ -63,21 +63,21 @@ def generate_dataset(s_list, Ry_list, no_datasets):
     for s in s_list:
         for Ry in Ry_list:
             dataset = np.empty(shape=(no_datasets, T, k + 2), dtype=float)
-            beta_dataset = np.empty(shape=(no_datasets, k), dtype=float)
+            dataset_nonhomogene = np.empty(shape=(no_datasets, 2, k), dtype=float)
             for i in range(no_datasets):
                 X = X_data()
                 beta = beta_data(s)
                 epsilon = epsilon_data(Ry, beta, X)
                 Y = Y_data(X, beta, epsilon)
-
+                z=(beta==0)
                 X = zscore(X)
                 beta = zscore(beta)
                 epsilon = zscore(epsilon)
                 Y = zscore(Y)
                 # we standardize the data, column by column before putting it in our dataset.
                 dataset[i] = np.hstack([X, epsilon.reshape(-1, 1), Y.reshape(-1, 1)])
-                beta_dataset[i] = beta
-            datasets[(s, Ry)] = dataset, beta_dataset
+                dataset_nonhomogene[i] = np.vstack([beta, z])
+            datasets[(s, Ry)] = dataset, dataset_nonhomogene
 
     return datasets
 
@@ -85,22 +85,10 @@ def generate_dataset(s_list, Ry_list, no_datasets):
 datasets = generate_dataset(s_list, Ry_list, no_datasets)
 
 """
-    
-    #Triple liste: on itère sur les valeurs de s et de Ry pour créer un dataset
-    datasets={}
-    for s in s_list:
-        for Ry in Ry_list: 
-            dataset=pd.DataFrame(index=["Dataset " +str(i+1) for i in range(no_datasets)],columns=["X","beta","epsilon","Y","z"])
 
-            for i in range(no_datasets):
-                X=X_data()
-                beta=beta_data(s)
-                epsilon=epsilon_data(Ry,beta,X)
-                Y=Y_data(X,beta,epsilon)
-                z=beta==0
                 #z est un array de booléens, automatiquement remplacé par les valeurs correspondantes lorsque c'est nécessaire.
                 #z est déterminé dès maintenant, puisqu'il est plus compliqué de le déterminer une fois beta normalisé. 
-                X=zscore(X,axis=0)# Un doute sur l'axe ici: est-ce qu'on normalise pour T ou pour K? 
+                # Un doute sur l'axe ici: est-ce qu'on normalise pour T ou pour K? 
                 beta=zscore(beta)
                 epsilon=zscore(epsilon)
                 Y=zscore(Y)
