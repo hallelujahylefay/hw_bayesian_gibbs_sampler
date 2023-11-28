@@ -3,6 +3,7 @@ from scipy.stats import invgamma
 from scipy.stats import multivariate_normal as mnormal
 from scipy.special import gamma, gammaincc, comb
 from simulate_data import generate_dataset
+from scipy.integrate import quad, dblquad
 
 
 k = 100
