@@ -44,15 +44,12 @@ def beta_data(s):
     
 
 def epsilon_data(Ry,beta,X):
-    X_t = np.array([X[:,i] for i in range(T)])
-    temp=[beta.T @ X_t[i] for i in range(T)]
-    betaxt=list(map(lambda x:x**2,temp))
-    return np.random.normal(0, (1/Ry-1) * (1/T)* sum(betaxt),size=T)    
+    s_bxt=np.sum((beta.T@X)**2,axis=0)/T
+    return np.random.normal(0, (1/Ry-1) * (1/T)* s_bxt,size=T)    
 
     
 def Y_data(X,beta,epsilon):
-    X_t = np.array([X[:,i] for i in range(T)])
-    return np.array([X_t[i].T @ beta +epsilon[i] for i in range(T)])
+    return X.T @ beta + epsilon
 
 def generate_dataset(s_list=[5,10,100],Ry_list=[0.2,0.25,0.5],no_datasets=100):
     """
