@@ -94,7 +94,8 @@ def R2q(X, z, sigma2_v, beta_v):
         q_=invCDF(univariate_pdf,grid_q,u)
         def pdf_q(R_v):
             return conditional_pdf(q_,R_v)
-        R_=invCDF(pdf_q,grid_R2,u)
+        v=np.random.uniform(0,1)
+        R_=invCDF(pdf_q,grid_R2,v)
         return (q_,R_)
         
     return sampleqR # function that will be looped over to generate samples of (q, R) given X z
