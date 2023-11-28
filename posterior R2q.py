@@ -43,7 +43,7 @@ def R2q(X, z, sigma2_v, beta_v):
         normalize_constant = np.sum(weights)
         weights /= normalize_constant
         cdf = np.cumsum(weights)
-        return grid[np.argmax(cdf > u)]
+        return grid[np.argmax(cdf < u)]
 
     def sampleqR():
         u=np.random.uniform(0,1)
