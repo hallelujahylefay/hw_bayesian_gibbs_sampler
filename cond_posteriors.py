@@ -57,13 +57,14 @@ def R2q(X, z):
     def inc_gamma(a, x):
         return gamma(a)*gammaincc(a, x)
         
-    def univariate_pdf():
+    def univariate_pdf(R2_v):
         # marginal of R, integrate joint posterior which is proportionate to a sum of lower 
         # incomplete gamma functions
         bz = beta_v @ np.diag(z) @ beta_v.T
         sz_v = sz(z)
         t= 1 / (2 * sigma2_v) * (k * vbar(X) * ((1 - R2_v) / R2_v) * bz)
-        return  sum([(-1) ** i * comb( k-sz_v , i ) * inc_gamma(3 * sz_v / 2 + i + 1, t ) for i in range(k-sz_v)])
+        return  R2_v ** (A - 1 - sz_v / 2) * (1 - R2_v) ** (sz_v / 2 + B - 1) * sum(
+            [(-1) ** i * comb( k-sz_v , i ) * inc_gamma(3 * sz_v / 2 + i + 1, t ) for i in range(k-sz_v)])
 
     def conditional_pdf(q_v,R2_v):
         # distribution of q conditional on R2, proportionate to the joint posterior
@@ -88,8 +89,7 @@ def R2q(X, z):
         R_=invCDF(univariate_pdf(),grid_R2,u)
         def pdf_q(q_v):
             return conditional_pdf(q_v,R_)
-        v=np.random.uniform(0,1)
-        q_=invCDF(pdf_q(),grid_q,v))
+        q_=invCDF(pdf_q(),grid_q,u))
         return (q_,R_)
 
     return sampleqR  # function that will be looped over to generate samples of (q, R) given X z
