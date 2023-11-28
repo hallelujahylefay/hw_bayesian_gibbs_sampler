@@ -2,7 +2,7 @@ from scipy.integrate import quad
 from scipy.integrate import dblquad
 import numpy as np
 
-def R2q(X, z):
+def R2q(X, z, sigma2_v, beta_v):
     def joint_pdf(q_v, R2_v, X, z, beta_v, sigma2_v):
         bz = beta_v @ np.diag(z) @ beta_v.T
         sz_v = sz(z)
@@ -14,14 +14,15 @@ def R2q(X, z):
     grid_R2 = [i / 1000 for i in range(1, 100)] + [i / 100 for i in range(10, 90)] + [i / 1000 for i in
                                                                                       range(900, 1000)]
     
-
+    
     def f(R2,q):
-        return joint_pdf(q,R2,X,z,beta_v,sigma2)
+        return joint_pdf(q,R2,X,z,beta_v,sigma2_v)
     norm=dblquad(f, 10**(-1), 1-10**(-1), 10**(-1), 1-10**(-1))[0]
+
     def univariate_pdf(q_v):
         # marginal of q, integrate joint posterior 
         def exp(R2):
-            return joint_pdf(q_v,R2,X,z,beta_v,sigma2)
+            return joint_pdf(q_v,R2,X,z,beta_v,sigma2_v)
         return  quad(exp, 10**(-1), 1-10**(-1))[0]/norm
 
     def conditional_pdf(q_v,R2_v):
@@ -43,7 +44,7 @@ def R2q(X, z):
         cdf = np.cumsum(weights)
         return grid[np.argmax(cdf > u)]
 
-    def sampleqR(n):
+    def sampleqR():
         u=np.random.uniform(0,1)
         q_=invCDF(univariate_pdf(),grid_q,u)
         def pdf_q(R_v):
@@ -51,6 +52,4 @@ def R2q(X, z):
         R_=invCDF(pdf_q(),grid_R2,u)
         return (q_,R_)
         
-        
-
     return sampleqR  # function that will be looped over to generate samples of (q, R) given X z
