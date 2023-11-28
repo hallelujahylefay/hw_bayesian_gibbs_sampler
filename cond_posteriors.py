@@ -63,7 +63,7 @@ def R2q(X, z, beta_v, sigma2_v):
         def exp(R2_v):
             return joint_pdf(q_v, R2_v)
 
-        return quad(exp, 10 ** (-1), 1 - 10 ** (-1))[0] / norm
+        return quad(exp, 10 ** (-3), 1 - 10 ** (-3))[0] / norm
 
     def conditional_pdf(q_v, R2_v):
         # distribution of q conditional on R2, proportionate to the joint posterior

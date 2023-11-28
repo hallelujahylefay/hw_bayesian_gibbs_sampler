@@ -62,8 +62,8 @@ def generate_dataset(s_list, Ry_list, no_datasets):
     datasets = dict()
     for s in s_list:
         for Ry in Ry_list:
-            dataset = np.empty(shape=(no_datasets, T, k + 2), dtype=float)
-            dataset_nonhomogene = np.empty(shape=(no_datasets, 2, k), dtype=float)
+            X_eps_Y = np.empty(shape=(no_datasets, T, k + 2), dtype=float)
+            beta_z = np.empty(shape=(no_datasets, 2, k), dtype=float)
             for i in range(no_datasets):
                 X = X_data()
                 beta = beta_data(s)
@@ -75,9 +75,9 @@ def generate_dataset(s_list, Ry_list, no_datasets):
                 epsilon = zscore(epsilon)
                 Y = zscore(Y)
                 # we standardize the data, column by column before putting it in our dataset.
-                dataset[i] = np.hstack([X, epsilon.reshape(-1, 1), Y.reshape(-1, 1)])
-                dataset_nonhomogene[i] = np.vstack([beta, z])
-            datasets[(s, Ry)] = dataset, dataset_nonhomogene
+                X_eps_Y[i] = np.hstack([X, epsilon.reshape(-1, 1), Y.reshape(-1, 1)])
+                beta_z[i] = np.vstack([beta, z])
+            datasets[(s, Ry)] = X_eps_Y, beta_z
 
     return datasets
 
