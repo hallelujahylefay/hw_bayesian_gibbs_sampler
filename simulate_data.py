@@ -1,6 +1,7 @@
 import numpy as np
 import random
 from scipy.stats import zscore
+import pandas as pd
 
 k = 100
 T = 200
@@ -26,7 +27,8 @@ On recommence avec
 s ou Ry qui change de valeur (ou les deux)
 Et ainsi de suite jusqu'à avoir couvert toutes les valeurs possibles du couple (s,Ry)
 
-"""
+"""    
+
 
 
 def X_data(rho=0.75):
@@ -34,14 +36,13 @@ def X_data(rho=0.75):
     np.linalg.cholesky(toeplitz_covariance_matrix) @ np.random.normal(size=(k, T))
     return np.linalg.cholesky(toeplitz_covariance_matrix) @ np.random.normal(size=(k, T))
 
-
 def beta_data(s):
     beta = np.random.normal(0, 1, size=k)
     zeroes_position = random.sample(range(0, 100),
                                     k - s)  # s nombres, choisis au hasard entre 0 et k. les coordonnées correspondantes dans beta seront rendues nulles.
     beta[zeroes_position] = 0
     return beta
-
+    
 
 def epsilon_data(Ry, beta, X):
     s_bxt = np.sum((beta.T @ X) ** 2, axis=0) / T
@@ -85,3 +86,33 @@ def Y_data(X, beta, epsilon):
 #
 #
 # datasets = generate_dataset()
+
+"""
+    
+    #Triple liste: on itère sur les valeurs de s et de Ry pour créer un dataset
+    datasets={}
+    for s in s_list:
+        for Ry in Ry_list: 
+            dataset=pd.DataFrame(index=["Dataset " +str(i+1) for i in range(no_datasets)],columns=["X","beta","epsilon","Y","z"])
+
+            for i in range(no_datasets):
+                X=X_data()
+                beta=beta_data(s)
+                epsilon=epsilon_data(Ry,beta,X)
+                Y=Y_data(X,beta,epsilon)
+                z=beta==0
+                #z est un array de booléens, automatiquement remplacé par les valeurs correspondantes lorsque c'est nécessaire.
+                #z est déterminé dès maintenant, puisqu'il est plus compliqué de le déterminer une fois beta normalisé. 
+                X=zscore(X,axis=0)# Un doute sur l'axe ici: est-ce qu'on normalise pour T ou pour K? 
+                beta=zscore(beta)
+                epsilon=zscore(epsilon)
+                Y=zscore(Y)
+                #we standardize the data, column by column before putting it in our dataset.
+
+                dataset.loc["Dataset " +str(i+1)]=[X,beta,epsilon,Y,z]
+            datasets[(s,Ry)]=dataset.to_numpy()
+               
+
+
+datasets=generate_dataset()
+"""

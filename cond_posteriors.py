@@ -1,9 +1,13 @@
 import numpy as np
-from scipy.stats import gamma
+from scipy.stats import invgamma
 from scipy.stats import multivariate_normal as mnormal
 from scipy.special import gamma, gammaincc, comb
+from simulate_data import generate_dataset
+from scipy.integrate import quad, dblquad
 
-# from simulate_data import generate_dataset
+grid_q = [i / 1000 for i in range(1, 100)] + [i / 100 for i in range(10, 90)] + [i / 1000 for i in range(900, 1000)]
+grid_R2 = [i / 1000 for i in range(1, 100)] + [i / 100 for i in range(10, 90)] + [i / 1000 for i in
+                                                                                  range(900, 1000)]
 
 k = 100
 T = 200
@@ -12,10 +16,6 @@ a = 1
 b = 1
 A = 1
 B = 1
-
-grid_q = [i / 1000 for i in range(1, 100)] + [i / 100 for i in range(10, 90)] + [i / 1000 for i in range(900, 1000)]
-grid_R2 = [i / 1000 for i in range(1, 100)] + [i / 100 for i in range(10, 90)] + [i / 1000 for i in
-                                                                                  range(900, 1000)]
 
 
 def sz(z):
@@ -46,35 +46,29 @@ def betahat(Wtildeinv_v, Xtilde_v, Y):
     return Wtildeinv_v @ Xtilde_v.T @ Y
 
 
-def R2q(X, z):
+def R2q(X, z, beta_v, sigma2_v):
     sz_v = sz(z)
+    bz = beta_v @ np.diag(z) @ beta_v.T
+    vbarX_v = vbar(X)
 
-    def joint_pdf(q_v, R2_v, X, z, beta_v, sigma2_v):
-        bz = beta_v @ np.diag(z) @ beta_v.T
-        sz_v = sz(z)
-        return np.exp((-1 / (2 * sigma2_v)) * (k * vbar(X) * q_v * ((1 - R2_v) / R2_v) * bz)) * q_v ** (
+    def joint_pdf(q_v, R2_v):
+        return np.exp((-1 / (2 * sigma2_v)) * (k * vbarX_v * q_v * ((1 - R2_v) / R2_v) * bz)) * q_v ** (
                 3 / 2 * sz_v + a - 1) * (
                        1 - q_v) ** (k - sz_v + b - 1) * R2_v ** (A - 1 - sz_v / 2) * (1 - R2_v) ** (sz_v / 2 + B - 1)
 
-    def inc_gamma(a, x):
-        return gamma(a) * gammaincc(a, x)
+    norm = dblquad(joint_pdf, 10 ** (-1), 1 - 10 ** (-1), 10 ** (-1), 1 - 10 ** (-1))[0]
 
-    def univariate_pdf(R2_v):
-        # marginal of R, integrate joint posterior which is proportionate to a sum of lower 
-        # incomplete gamma functions
-        bz = beta_v @ np.diag(z) @ beta_v.T
-        t = 1 / (2 * sigma2_v) * (k * vbar(X) * ((1 - R2_v) / R2_v) * bz)
-        return sum([(-1) ** i * comb(k - sz_v, i) * inc_gamma(3 * sz_v / 2 + i + 1, t) for i in range(k - sz_v)])
+    def univariate_pdf(q_v):
+        # marginal of q, integrate joint posterior
+        def exp(R2_v):
+            return joint_pdf(q_v, R2_v)
+
+        return quad(exp, 10 ** (-1), 1 - 10 ** (-1))[0] / norm
 
     def conditional_pdf(q_v, R2_v):
         # distribution of q conditional on R2, proportionate to the joint posterior
-        bz = beta_v @ np.diag(z) @ beta_v.T
-        return np.exp((-1 / (2 * sigma2_v)) * (k * vbar(X) * q_v * ((1 - R2_v) / R2_v) * bz)) * q_v ** (
-                3 / 2 * sz_v + a - 1) * (1 - q_v) ** (k - sz_v + b - 1)
-        # initial values for q and R2
-
-    q_ = grid_q[np.random.random_integers(0, len(grid_q))]
-    R_ = grid_R2[np.random.random_integers(0, len(grid_R2))]
+        return np.exp((-1 / (2 * sigma2_v)) * (k * vbarX_v * q_v * ((1 - R2_v) / R2_v) * bz)) * R2_v ** (
+                A - 1 - sz_v / 2) * (1 - R2_v) ** (sz_v / 2 + B - 1)
 
     def cdf(pdf, grid):
         weights = [pdf(i) for i in grid]
@@ -84,7 +78,7 @@ def R2q(X, z):
         return cdf
 
     def invCDF(cdf, grid, u):
-        return grid[np.argmax(cdf > u)]
+        return grid[np.argmax(cdf < u)]
 
     cdfR = cdf(univariate_pdf, grid_R2)
 
@@ -147,7 +141,7 @@ def sigma2(Y, X, R2_v, q_v, z):
     Wtildeinv_v = np.linalg.inv(Wtilde_v)
     betahat_v = betahat(Wtildeinv_v, Xtilde_v, Y)
     # Lorsqu'on regroupera, toute cette initialisation de variables _v ne sera évidemment à faire qu'une fois.
-    return gamma(T / 2, (
+    return invgamma(T / 2, (
             Y.T @ Y - betahat_v.T @ (Xtilde_v.T @ Xtilde_v + np.eye(sz_v) / gamma2_v @ betahat_v) / 2))  # Ytilde=Y
 
 
@@ -160,5 +154,3 @@ def betatilde(Y, X, R2_v, q_v, sigma2_v, z):
     mean = invTerm @ Xtilde_v @ Y  # Pas de U*phi
     cov = invTerm * sigma2_v
     return mnormal(mean, cov)
-
-# %%
