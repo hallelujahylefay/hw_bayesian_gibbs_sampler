@@ -65,22 +65,25 @@ def generate_dataset(s_list=[5,10,100],Ry_list=[0.2,0.25,0.5],no_datasets=100):
     datasets={}
     for s in s_list:
         for Ry in Ry_list: 
-            dataset=pd.DataFrame(index=["Dataset " +str(i+1) for i in range(no_datasets)],columns=["X","beta","epsilon","Y"])
+            dataset=pd.DataFrame(index=["Dataset " +str(i+1) for i in range(no_datasets)],columns=["X","beta","epsilon","Y","z"])
 
             for i in range(no_datasets):
                 X=X_data()
                 beta=beta_data(s)
                 epsilon=epsilon_data(Ry,beta,X)
                 Y=Y_data(X,beta,epsilon)
-                
-                X=zscore(X)
+                z=beta==0
+                #z est un array de booléens, automatiquement remplacé par les valeurs correspondantes lorsque c'est nécessaire.
+                #z est déterminé dès maintenant, puisqu'il est plus compliqué de le déterminer une fois beta normalisé. 
+                X=zscore(X,axis=0)# Un doute sur l'axe ici: est-ce qu'on normalise pour T ou pour K? 
                 beta=zscore(beta)
                 epsilon=zscore(epsilon)
                 Y=zscore(Y)
                 #we standardize the data, column by column before putting it in our dataset.
-                dataset.loc["Dataset " +str(i+1)]=[X,beta,epsilon,Y]
+
+                dataset.loc["Dataset " +str(i+1)]=[X,beta,epsilon,Y,z]
             datasets[(s,Ry)]=dataset.to_numpy()
                
-    return datasets #datasets[(5,.2)][11][0] renvoie la valeur de X pour le 12e dataset correspondant à s=5 et Ry=0.2. Remplacer 0 par 1, 2 ou 3 resp. pour avoir la valeur de beta, epsilon ou Y resp.
+
 
 datasets=generate_dataset()
