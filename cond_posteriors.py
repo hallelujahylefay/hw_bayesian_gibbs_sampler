@@ -73,20 +73,20 @@ def R2q(X, z, beta_v, sigma2_v):
         normalize_constant = np.sum(weights)
         weights /= normalize_constant
         cdf = np.cumsum(weights)
-        return cdf
+        return list(cdf)
 
     def invCDF(cdf, grid, u):
         return grid[cdf.index(max(n for n in cdf  if n<u))]
 
-    cdfR = cdf(univariate_pdf, grid_R2)
+    cdfR = cdf(univariate_pdf, grid_q)
 
     def sampleqR():
         u = np.random.uniform(0, 1)
-        R_ = invCDF(cdfR, grid_R2, u)
+        q_ = invCDF(cdfR, grid_q, u)
 
-        cdfQconditiononR = cdf(lambda q: conditional_pdf(q, R_), grid_q)
+        cdfQconditiononR = cdf(lambda R: conditional_pdf(q_, R), grid_R2)
         v = np.random.uniform(0, 1)
-        q_ = invCDF(cdfQconditiononR, grid_q, v)
+        R_ = invCDF(cdfQconditiononR, grid_R2, v)
         return q_, R_
 
     return sampleqR  # function that will be looped over to generate samples of (q, R) given X z
