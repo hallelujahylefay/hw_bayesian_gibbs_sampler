@@ -10,7 +10,7 @@ b = 1
 A = 1
 B = 1
 s_list = [5, 10, 100]
-Ry_list = [0.2, 0.25, 0.5]
+Ry_list = [0.02, 0.25, 0.5]
 no_datasets = 100
 """
 J'imagine la syntaxe comme suit:
