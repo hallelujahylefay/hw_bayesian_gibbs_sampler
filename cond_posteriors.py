@@ -78,11 +78,11 @@ def R2q(X, z, beta_v, sigma2_v):
     def invCDF(cdf, grid, u):
         return grid[cdf.index(max(n for n in cdf  if n<u))]
 
-    cdfR = cdf(univariate_pdf, grid_q)
+    cdfq = cdf(univariate_pdf, grid_q)
 
     def sampleqR():
         u = np.random.uniform(0, 1)
-        q_ = invCDF(cdfR, grid_q, u)
+        q_ = invCDF(cdfq, grid_q, u)
 
         cdfQconditiononR = cdf(lambda R: conditional_pdf(q_, R), grid_R2)
         v = np.random.uniform(0, 1)
