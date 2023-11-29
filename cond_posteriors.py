@@ -56,19 +56,17 @@ def R2q(X, z, beta_v, sigma2_v):
                 3 / 2 * sz_v + a - 1) * (
                        1 - q_v) ** (k - sz_v + b - 1) * R2_v ** (A - 1 - sz_v / 2) * (1 - R2_v) ** (sz_v / 2 + B - 1)
 
-    norm = dblquad(joint_pdf, 10 ** (-1), 1 - 10 ** (-1), 10 ** (-1), 1 - 10 ** (-1))[0]
 
     def univariate_pdf(q_v):
         # marginal of q, integrate joint posterior
         def exp(R2_v):
             return joint_pdf(q_v, R2_v)
 
-        return quad(exp, 10 ** (-3), 1 - 10 ** (-3))[0] / norm
+        return quad(exp, 10 ** (-2), 1 - 10 ** (-2))[0] 
 
     def conditional_pdf(q_v, R2_v):
         # distribution of q conditional on R2, proportionate to the joint posterior
-        return np.exp((-1 / (2 * sigma2_v)) * (k * vbarX_v * q_v * ((1 - R2_v) / R2_v) * bz)) * R2_v ** (
-                A - 1 - sz_v / 2) * (1 - R2_v) ** (sz_v / 2 + B - 1)
+        return joint_pdf(q_v,R2_v)/univariate_pdf(q_v)
 
     def cdf(pdf, grid):
         weights = [pdf(i) for i in grid]
@@ -78,7 +76,7 @@ def R2q(X, z, beta_v, sigma2_v):
         return cdf
 
     def invCDF(cdf, grid, u):
-        return grid[np.argmax(cdf < u)]
+        return grid[cdf.index(max(n for n in cdf  if n<u))]
 
     cdfR = cdf(univariate_pdf, grid_R2)
 
