@@ -41,10 +41,12 @@ def beta_data(s):
     beta[zeroes_position] = 0
     return beta
 
+def sigma2_data(Ry,beta,X):
+    s_bxt = np.sum((X @ beta) ** 2, axis=0) / T
+    return (1 / Ry - 1) * (1 / T) * s_bxt
 
 def epsilon_data(Ry, beta, X):
-    s_bxt = np.sum((X @ beta) ** 2, axis=0) / T
-    return np.random.normal(0, (1 / Ry - 1) * (1 / T) * s_bxt, size=T)
+    return np.random.normal(0, sigma2_data(Ry,beta,X), size=T)
 
 
 def Y_data(X, beta, epsilon):
@@ -69,7 +71,7 @@ def generate_dataset(s_list, Ry_list, no_datasets):
                 beta = beta_data(s)
                 epsilon = epsilon_data(Ry, beta, X)
                 Y = Y_data(X, beta, epsilon)
-                z=(beta==0)
+                z=(beta!=0)
                 X = zscore(X)
                 beta = zscore(beta)
                 epsilon = zscore(epsilon)
@@ -81,8 +83,14 @@ def generate_dataset(s_list, Ry_list, no_datasets):
 
     return datasets
 
+# en posant test= datasets[5,0.2], on a:
+#   test[0] me renvoie les 100 X_eps_Y. test[1] me renvoie les 100 beta_z
+#   test[1][99][0] renvoie les valeurs de beta pour le 100e dataset.
+#   test[0][50][1] renvoie les valeurs d'epsilon pour le 50e dataset.
+
 
 datasets = generate_dataset(s_list, Ry_list, no_datasets)
+
 
 """
 
