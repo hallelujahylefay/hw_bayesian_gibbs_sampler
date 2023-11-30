@@ -137,7 +137,7 @@ def sigma2(Y, X, R2_v, q_v, z):
     Wtildeinv_v = np.linalg.inv(Wtilde_v)
     betahat_v = betahat(Wtildeinv_v, Xtilde_v, Y)
     form = T / 2
-    param = (Y.T @ Y - betahat_v.T @ (Xtilde_v.T @ Xtilde_v + np.eye(sz_v) / gamma2_v @ betahat_v)) / 2
+    param = (Y.T @ Y - betahat_v.T @ (Xtilde_v.T @ Xtilde_v + np.eye(sz_v) / gamma2_v )@ betahat_v) / 2
     scale = 1 / param
     # Lorsqu'on regroupera, toute cette initialisation de variables _v ne sera évidemment à faire qu'une fois.
     return 1/(gamma(a=form).rvs()*scale)  # Ytilde=Y
@@ -149,6 +149,6 @@ def betatilde(Y, X, R2_v, q_v, sigma2_v, z):
     Xtilde_v = Xtilde(X, z)
     id = np.eye(sz_v)
     invTerm = np.linalg.inv(id / gamma2_v + Xtilde_v.T @ Xtilde_v)
-    mean = invTerm @ Xtilde_v @ Y  # Pas de U*phi
+    mean = invTerm @ Xtilde_v.T @ Y  # Pas de U*phi
     cov = invTerm * sigma2_v
-    return mnormal(mean, cov)
+    return mnormal(mean, cov).rvs()
