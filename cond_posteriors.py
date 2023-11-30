@@ -95,9 +95,10 @@ def R2q(X, z, beta_v, sigma2_v):
 
 
 def z(Y, X, R2_v, q_v):
+    gamma2_v = gamma2(R2_v, q_v, X)
+
     def logpdf(z_v):
         sz_v = sz(z_v)
-        gamma2_v = gamma2(R2_v, q_v, X)
         Xtilde_v = Xtilde(X, z_v)
         Wtilde_v = Wtilde(Xtilde_v, sz_v, gamma2_v)
         WtildeinvXtilde_v = np.linalg.solve(Wtilde_v, Xtilde_v.T)
@@ -109,7 +110,8 @@ def z(Y, X, R2_v, q_v):
 
     def logpdf_exclusion(index, z):
         logp = logpdf(z)
-        if z[index] == 0:
+        zi = z[index]
+        if zi == 0:
             logp0 = logp
             z[index] = 1
             logp1 = logpdf(z)
@@ -117,7 +119,9 @@ def z(Y, X, R2_v, q_v):
             logp1 = logp
             z[index] = 0
             logp0 = logpdf(z)
-        return logp - np.logaddexp(logp0 + np.log(q_v), logp1 + np.log(1 - q_v))
+        z[index] = zi
+        return logp - np.logaddexp(logp0, logp1)
+        #return logp - np.logaddexp(logp0 + np.log(q_v), logp1 + np.log(1 - q_v))
 
     def pdf_exclusion(i, z):
         return np.exp(logpdf_exclusion(i, z))
@@ -149,12 +153,15 @@ def sigma2(Y, X, R2_v, q_v, z):
     return 1 / (gamma(a=form).rvs() * scale)  # Ytilde=Y
 
 
-def betatilde(Y, X, R2_v, q_v, sigma2_v, z):
-    sz_v = sz(z)
+def betatilde(Y, X, R2_v, q_v, sigma2_v, z_v):
+    sz_v = sz(z_v)
     gamma2_v = gamma2(R2_v, q_v, X)
-    Xtilde_v = Xtilde(X, z)
+    Xtilde_v = Xtilde(X, z_v)
     id = np.eye(sz_v)
     invTerm = np.linalg.inv(id / gamma2_v + Xtilde_v.T @ Xtilde_v)
     mean = invTerm @ Xtilde_v.T @ Y  # Pas de U*phi
     cov = invTerm * sigma2_v
-    return mnormal(mean, cov).rvs()
+    sample = mnormal(mean, cov).rvs()
+    beta_v = np.zeros(shape=k)
+    beta_v[z_v] = sample
+    return beta_v

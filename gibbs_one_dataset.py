@@ -36,7 +36,5 @@ Y = zscore(Y)
 for n in tqdm(range(100)):
     R2_v, q_v = cp.R2q(X, z_v, beta_v, sigma2_v)()
     z_v = cp.z(Y, X, R2_v, q_v)(z_v)
-    #sigma2_v = cp.sigma2(Y, X, R2_v, q_v, z_v)
-    #beta_v_tilde = cp.betatilde(Y, X, R2_v, q_v, 1.0, z_v)
-    #beta_v = np.zeros(shape=k)
-    #beta_v[z_v] = beta_v_tilde
+    sigma2_v = cp.sigma2(Y, X, R2_v, q_v, z_v)
+    beta_v_tilde = cp.betatilde(Y, X, R2_v, q_v, 1.0, z_v)
