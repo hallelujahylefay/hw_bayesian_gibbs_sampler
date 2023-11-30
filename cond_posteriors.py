@@ -30,7 +30,6 @@ def vbar(X):
 
 
 def gamma2(R2_v, q_v, X):
-    #    return (1 / (1 - R2_v) - 1) * 1 / (q_v * k * vbar(X))
     return R2_v / (q_v * k * vbar(X) * (1 - R2_v))
 
 
@@ -40,10 +39,6 @@ def Wtilde(Xtilde_v, sz_v, gamma2_v):
 
 def Xtilde(X, z_v):
     return X[:, z_v.astype(bool)]
-
-
-def sigma2_data(beta_v, X, Ry):  # le sigma_2 qui serviraà générer le jeu de données.
-    return (1 / (Ry - 1)) * np.mean((beta_v @ X.T) ** 2, axis=0)
 
 
 def betahat(Wtilde_v, Xtilde_v, Y):
