@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.stats import invgamma
+from scipy.stats import gamma
 from scipy.stats import multivariate_normal as mnormal
 
 grid_q = np.array(
@@ -101,7 +101,7 @@ def z(Y, X, R2_v, q_v):
                - T / 2 * np.log((Y.T @ Y - betahat_v.T @ Wtilde_v @ betahat_v) / 2)
         return logp
 
-    def pdf_exclusion(index, z):
+    def logpdf_exclusion(index, z):
         logp = logpdf(z)
         z[index] = 0
         logp0 = logpdf(z)
@@ -111,7 +111,7 @@ def z(Y, X, R2_v, q_v):
 
     def iter_gibbs(z):
         for i in range(k):
-            logp = pdf_exclusion(i, z)
+            logp = logpdf_exclusion(i, z)
             p = np.exp(logp)
             u = np.random.uniform(0, 1)
             if u > p:
@@ -136,10 +136,11 @@ def sigma2(Y, X, R2_v, q_v, z):
     Wtilde_v = Wtilde(Xtilde_v, sz_v, gamma2_v)
     Wtildeinv_v = np.linalg.inv(Wtilde_v)
     betahat_v = betahat(Wtildeinv_v, Xtilde_v, Y)
+    form = T / 2
+    param = (Y.T @ Y - betahat_v.T @ (Xtilde_v.T @ Xtilde_v + np.eye(sz_v) / gamma2_v @ betahat_v)) / 2
+    scale = 1 / param
     # Lorsqu'on regroupera, toute cette initialisation de variables _v ne sera évidemment à faire qu'une fois.
-    return invgamma(a=T / 2, scale=(
-                                           Y.T @ Y - betahat_v.T @ (Xtilde_v.T @ Xtilde_v + np.eye(
-                                       sz_v) / gamma2_v @ betahat_v)) / 2)  # Ytilde=Y
+    return 1/(gamma(a=form).rvs()*scale)  # Ytilde=Y
 
 
 def betatilde(Y, X, R2_v, q_v, sigma2_v, z):
