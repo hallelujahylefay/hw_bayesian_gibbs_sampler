@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from scipy.integrate import quad
 import numpy as np
-import random
 from scipy.stats import zscore
 from simulate_data import X_data, beta_data, epsilon_data, Y_data, sigma2_data
 from tqdm import tqdm
@@ -28,24 +26,17 @@ epsilon = epsilon_data(Ry, beta_v, X)
 Y = Y_data(X, beta_v, epsilon)
 sigma2_v = sigma2_data(Ry, beta_v, X)
 z_v = (beta_v != 0)
-z_vpre=z_v
+z_vpre = z_v
 
 X = zscore(X)
 beta_v = zscore(beta_v)
 epsilon = zscore(epsilon)
 Y = zscore(Y)
 
-(R2_v, q_v) = cp.R2q(X, z_v, beta_v, sigma2_v)()
-z_v = cp.z(Y, X, R2_v, q_v)(z_v)
-sz_v=np.sum(z_v)
-sigma2_v = cp.sigma2(Y, X, R2_v, q_v, z_v)
-
-#%%
-R2_q = []
 for n in tqdm(range(100)):
     R2_v, q_v = cp.R2q(X, z_v, beta_v, sigma2_v)()
     z_v = cp.z(Y, X, R2_v, q_v)(z_v)
-    sigma2_v = cp.sigma2(Y, X, R2_v, q_v, z_v)
-    beta_v_tilde = cp.betatilde(Y, X, R2_v, q_v, sigma2_v, z_v)
-    beta_v=np.zeros(shape=k)
-    beta_v[z_v]=beta_v_tilde
+    #sigma2_v = cp.sigma2(Y, X, R2_v, q_v, z_v)
+    #beta_v_tilde = cp.betatilde(Y, X, R2_v, q_v, 1.0, z_v)
+    #beta_v = np.zeros(shape=k)
+    #beta_v[z_v] = beta_v_tilde

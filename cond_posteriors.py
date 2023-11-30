@@ -3,17 +3,19 @@ from scipy.stats import gamma
 from scipy.stats import multivariate_normal as mnormal
 
 grid_q = np.array(
-    [i / 1000 for i in range(1, 100)] + [i / 100 for i in range(10, 90)] + [i / 1000 for i in range(900, 1000)])
+    [i / 1000 for i in range(1, 100)] + [i / 100 for i in range(10, 90)] + [i / 1000 for i in range(900, 1000)],
+    dtype=np.float64)
 grid_R2 = np.array([i / 1000 for i in range(1, 100)] + [i / 100 for i in range(10, 90)] + [i / 1000 for i in
-                                                                                           range(900, 1000)])
+                                                                                           range(900, 1000)],
+                   dtype=np.float64)
 
 k = 100
 T = 200
-l = 0
-a = 1
-b = 1
-A = 1
-B = 1
+l = 0.
+a = 1.
+b = 1.
+A = 1.
+B = 1.
 
 
 def sz(z):
@@ -42,6 +44,10 @@ def sigma2_data(beta_v, X, Ry):  # le sigma_2 qui serviraà générer le jeu de 
 
 def betahat(Wtildeinv_v, Xtilde_v, Y):
     return Wtildeinv_v @ Xtilde_v.T @ Y
+
+
+def betahat2(WinvXtilde, Y):
+    return WinvXtilde @ Y
 
 
 def R2q(X, z, beta_v, sigma2_v):
@@ -94,36 +100,36 @@ def z(Y, X, R2_v, q_v):
         gamma2_v = gamma2(R2_v, q_v, X)
         Xtilde_v = Xtilde(X, z_v)
         Wtilde_v = Wtilde(Xtilde_v, sz_v, gamma2_v)
-        Wtildeinv_v = np.linalg.inv(Wtilde_v)
-        betahat_v = betahat(Wtildeinv_v, Xtilde_v, Y)
-        logp = sz_v * np.log(q_v) + (k - sz_v) * np.log(1 - q_v) - sz_v / 2 * np.log(gamma2_v) - 1 / 2 * np.log(
-            np.linalg.det(Wtilde_v)) \
+        WtildeinvXtilde_v = np.linalg.solve(Wtilde_v, Xtilde_v.T)
+        betahat_v = betahat2(WtildeinvXtilde_v, Y)
+        _, logdet = np.linalg.slogdet(Wtilde_v)
+        logp = sz_v * (np.log(q_v) - np.log(1 - q_v)) - sz_v / 2 * np.log(gamma2_v) - 1 / 2 * logdet \
                - T / 2 * np.log((Y.T @ Y - betahat_v.T @ Wtilde_v @ betahat_v) / 2)
         return logp
 
     def logpdf_exclusion(index, z):
         logp = logpdf(z)
-        z[index] = 0
-        logp0 = logpdf(z)
-        z[index] = 1
-        logp1 = logpdf(z)
+        if z[index] == 0:
+            logp0 = logp
+            z[index] = 1
+            logp1 = logpdf(z)
+        else:
+            logp1 = logp
+            z[index] = 0
+            logp0 = logpdf(z)
         return logp - np.logaddexp(logp0 + np.log(q_v), logp1 + np.log(1 - q_v))
 
-    def iter_gibbs(z):
+    def pdf_exclusion(i, z):
+        return np.exp(logpdf_exclusion(i, z))
+
+    def gibbs(z):
+        u = np.random.uniform(0, 1, size=k)
         for i in range(k):
-            logp = logpdf_exclusion(i, z)
-            p = np.exp(logp)
-            u = np.random.uniform(0, 1)
-            if u > p:
+            p = pdf_exclusion(i, z)
+            if u[i] > p:
                 z[i] = 0
             else:
                 z[i] = 1
-        return z
-
-    def gibbs(init, iter=1):
-        z = init
-        for i in range(iter):
-            z = iter_gibbs(z)
         return z
 
     return gibbs
@@ -137,10 +143,10 @@ def sigma2(Y, X, R2_v, q_v, z):
     Wtildeinv_v = np.linalg.inv(Wtilde_v)
     betahat_v = betahat(Wtildeinv_v, Xtilde_v, Y)
     form = T / 2
-    param = (Y.T @ Y - betahat_v.T @ (Xtilde_v.T @ Xtilde_v + np.eye(sz_v) / gamma2_v )@ betahat_v) / 2
+    param = (Y.T @ Y - betahat_v.T @ (Xtilde_v.T @ Xtilde_v + np.eye(sz_v) / gamma2_v) @ betahat_v) / 2
     scale = 1 / param
     # Lorsqu'on regroupera, toute cette initialisation de variables _v ne sera évidemment à faire qu'une fois.
-    return 1/(gamma(a=form).rvs()*scale)  # Ytilde=Y
+    return 1 / (gamma(a=form).rvs() * scale)  # Ytilde=Y
 
 
 def betatilde(Y, X, R2_v, q_v, sigma2_v, z):
