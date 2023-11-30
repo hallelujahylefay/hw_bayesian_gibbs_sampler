@@ -2,13 +2,6 @@ import numpy as np
 from scipy.stats import gamma
 from scipy.stats import multivariate_normal as mnormal
 
-grid_q = np.array(
-    [i / 1000 for i in range(1, 100)] + [i / 100 for i in range(10, 90)] + [i / 1000 for i in range(900, 1000)],
-    dtype=np.float64)
-grid_R2 = np.array([i / 1000 for i in range(1, 100)] + [i / 100 for i in range(10, 90)] + [i / 1000 for i in
-                                                                                           range(900, 1000)],
-                   dtype=np.float64)
-
 k = 100
 T = 200
 l = 0.
@@ -16,6 +9,16 @@ a = 1.
 b = 1.
 A = 1.
 B = 1.
+
+grid = [i for i in np.arange(0.001, 0.101, 0.001)]
+grid += [i for i in np.arange(0.11, 0.91, 0.01)]
+grid += [i for i in np.arange(0.901, 1, 0.001)]
+grid = np.array(grid, dtype=np.float64)
+surface = np.zeros(len(grid), dtype=np.float64)
+surface[:-1] = np.sum(np.array([[(grid[i] - grid[i - 1]) * (grid[j] - grid[j - 1]) for i in range(1, len(grid))] for j in
+                    range(1, len(grid))], dtype = np.float64), axis=1)
+surface[-1] = surface[-2]
+pass
 
 
 def sz(z):
@@ -27,7 +30,8 @@ def vbar(X):
 
 
 def gamma2(R2_v, q_v, X):
-    return (1 / (1 - R2_v) - 1) * 1 / (q_v * k * vbar(X))
+    #    return (1 / (1 - R2_v) - 1) * 1 / (q_v * k * vbar(X))
+    return R2_v / (q_v * k * vbar(X) * (1 - R2_v))
 
 
 def Wtilde(Xtilde_v, sz_v, gamma2_v):
@@ -35,7 +39,7 @@ def Wtilde(Xtilde_v, sz_v, gamma2_v):
 
 
 def Xtilde(X, z_v):
-    return X[:, z_v == 1]
+    return X[:, z_v.astype(bool)]
 
 
 def sigma2_data(beta_v, X, Ry):  # le sigma_2 qui serviraà générer le jeu de données.
@@ -53,6 +57,7 @@ def betahat2(WinvXtilde, Y):
 def R2q(X, z, beta_v, sigma2_v):
     sz_v = sz(z)
     bz = beta_v @ np.diag(z) @ beta_v.T
+    # bz = np.einsum('i, i ->', beta_v ** 2, z)
     vbarX_v = vbar(X)
 
     def joint_pdf(q_v, R2_v):
@@ -64,31 +69,31 @@ def R2q(X, z, beta_v, sigma2_v):
     def univariate_pdf(q_v):
         # marginal of q, integrate joint posterior
         _univariate_pdf = lambda R2_v: joint_pdf(q_v, R2_v)
-        return np.sum(_univariate_pdf(grid_R2))
+        return np.sum(_univariate_pdf(grid) * surface)
 
     def conditional_pdf(q_v, R2_v):
         # distribution of q conditional on R2, proportionate to the joint posterior
         return joint_pdf(q_v, R2_v) / univariate_pdf(q_v)
 
-    def cdf(pdf, grid):
-        weights = pdf(grid)
+    def cdf(pdf):
+        weights = pdf(grid) * surface
         normalize_constant = np.sum(weights)
         weights /= normalize_constant
         cdf = np.cumsum(weights)
         return cdf
 
-    def invCDF(cdf, grid, u):
+    def invCDF(cdf, u):
         return grid[np.where(cdf < u)[0][-1]]
 
-    cdfq = cdf(univariate_pdf, grid_q)
+    cdfq = cdf(univariate_pdf)
 
     def sampleqR():
         u = np.random.uniform(0, 1)
-        q_ = invCDF(cdfq, grid_q, u)
+        q_ = invCDF(cdfq, u)
 
-        cdfQconditiononR = cdf(lambda R: conditional_pdf(q_, R), grid_R2)
+        cdfRconditiononq = cdf(lambda R: conditional_pdf(q_, R))
         v = np.random.uniform(0, 1)
-        R_ = invCDF(cdfQconditiononR, grid_R2, v)
+        R_ = invCDF(cdfRconditiononq, v)
         return q_, R_
 
     return sampleqR  # function that will be looped over to generate samples of (q, R) given X z
@@ -121,7 +126,7 @@ def z(Y, X, R2_v, q_v):
             logp0 = logpdf(z)
         z[index] = zi
         return logp - np.logaddexp(logp0, logp1)
-        #return logp - np.logaddexp(logp0 + np.log(q_v), logp1 + np.log(1 - q_v))
+        # return logp - np.logaddexp(logp0 + np.log(q_v), logp1 + np.log(1 - q_v))
 
     def pdf_exclusion(i, z):
         return np.exp(logpdf_exclusion(i, z))
