@@ -46,12 +46,10 @@ def sigma2_data(beta_v, X, Ry):  # le sigma_2 qui serviraà générer le jeu de 
     return (1 / (Ry - 1)) * np.mean((beta_v @ X.T) ** 2, axis=0)
 
 
-def betahat(Wtildeinv_v, Xtilde_v, Y):
-    return Wtildeinv_v @ Xtilde_v.T @ Y
-
-
-def betahat2(WinvXtilde, Y):
-    return WinvXtilde @ Y
+def betahat(Wtilde_v, Xtilde_v, Y):
+    WtildeinvXtilde_v = np.linalg.solve(Wtilde_v, Xtilde_v.T)
+    betahat_v = WtildeinvXtilde_v @ Y
+    return betahat_v
 
 
 def R2q(X, z, beta_v, sigma2_v):
@@ -106,8 +104,7 @@ def z(Y, X, R2_v, q_v):
         sz_v = sz(z_v)
         Xtilde_v = Xtilde(X, z_v)
         Wtilde_v = Wtilde(Xtilde_v, sz_v, gamma2_v)
-        WtildeinvXtilde_v = np.linalg.solve(Wtilde_v, Xtilde_v.T)
-        betahat_v = betahat2(WtildeinvXtilde_v, Y)
+        betahat_v = betahat(Wtilde_v, Xtilde_v, Y)
         _, logdet = np.linalg.slogdet(Wtilde_v)
         logp = sz_v * (np.log(q_v) - np.log(1 - q_v)) - sz_v / 2 * np.log(gamma2_v) - 1 / 2 * logdet \
                - T / 2 * np.log((Y.T @ Y - betahat_v.T @ Wtilde_v @ betahat_v) / 2)
@@ -149,8 +146,7 @@ def sigma2(Y, X, R2_v, q_v, z):
     gamma2_v = gamma2(R2_v, q_v, X)
     Xtilde_v = Xtilde(X, z)
     Wtilde_v = Wtilde(Xtilde_v, sz_v, gamma2_v)
-    Wtildeinv_v = np.linalg.inv(Wtilde_v)
-    betahat_v = betahat(Wtildeinv_v, Xtilde_v, Y)
+    betahat_v = betahat(Wtilde_v, Xtilde_v, Y)
     form = T / 2
     param = (Y.T @ Y - betahat_v.T @ (Xtilde_v.T @ Xtilde_v + np.eye(sz_v) / gamma2_v) @ betahat_v) / 2
     scale = 1 / param

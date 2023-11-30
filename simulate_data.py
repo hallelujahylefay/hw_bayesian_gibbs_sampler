@@ -1,7 +1,6 @@
 import numpy as np
 import random
 from scipy.stats import zscore
-from sklearn.linear_model import Lasso
 
 k = 100
 T = 200
@@ -10,21 +9,19 @@ T = 200
 def X_data(rho=0.75):
     indices = np.arange(k)
     toeplitz_covariance_matrix = rho ** np.abs(indices[:, None] - indices)
-    # toeplitz_covariance_matrix = np.array([[rho ** abs(i - j) for i in range(k)] for j in range(k)])
     return np.random.normal(size=(T, k)) @ np.linalg.cholesky(toeplitz_covariance_matrix)
 
 
 def beta_data(s):
     beta = np.random.normal(0, 1, size=k)
-    zeroes_position = random.sample(range(0, 100),
+    zeroes_position = random.sample(range(k),
                                     k - s)  # s nombres, choisis au hasard entre 0 et k. les coordonnées correspondantes dans beta seront rendues nulles.
     beta[zeroes_position] = 0
     return beta
 
 
 def sigma2_data(Ry, beta, X):
-    s_bxt = np.sum((X @ beta) ** 2, axis=0) / T
-    return (1 / Ry - 1) * (1 / T) * s_bxt
+    return (1 / Ry - 1) * np.mean((X @ beta) ** 2, axis=0)
 
 
 def generate_dataset(s_list, Ry_list, no_datasets):
