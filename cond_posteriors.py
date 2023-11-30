@@ -1,13 +1,11 @@
 import numpy as np
 from scipy.stats import invgamma
 from scipy.stats import multivariate_normal as mnormal
-from scipy.special import gamma, gammaincc, comb
-from simulate_data import generate_dataset
-from scipy.integrate import quad, dblquad
 
-grid_q = [i / 1000 for i in range(1, 100)] + [i / 100 for i in range(10, 90)] + [i / 1000 for i in range(900, 1000)]
-grid_R2 = [i / 1000 for i in range(1, 100)] + [i / 100 for i in range(10, 90)] + [i / 1000 for i in
-                                                                                  range(900, 1000)]
+grid_q = np.array(
+    [i / 1000 for i in range(1, 100)] + [i / 100 for i in range(10, 90)] + [i / 1000 for i in range(900, 1000)])
+grid_R2 = np.array([i / 1000 for i in range(1, 100)] + [i / 100 for i in range(10, 90)] + [i / 1000 for i in
+                                                                                           range(900, 1000)])
 
 k = 100
 T = 200
@@ -56,27 +54,25 @@ def R2q(X, z, beta_v, sigma2_v):
                 3 / 2 * sz_v + a - 1) * (
                        1 - q_v) ** (k - sz_v + b - 1) * R2_v ** (A - 1 - sz_v / 2) * (1 - R2_v) ** (sz_v / 2 + B - 1)
 
-
+    @np.vectorize
     def univariate_pdf(q_v):
         # marginal of q, integrate joint posterior
-        def exp(R2_v):
-            return joint_pdf(q_v, R2_v)
-
-        return quad(exp, 10 ** (-2), 1 - 10 ** (-2))[0] 
+        _univariate_pdf = lambda R2_v: joint_pdf(q_v, R2_v)
+        return np.sum(_univariate_pdf(grid_R2))
 
     def conditional_pdf(q_v, R2_v):
         # distribution of q conditional on R2, proportionate to the joint posterior
-        return joint_pdf(q_v,R2_v)/univariate_pdf(q_v)
+        return joint_pdf(q_v, R2_v) / univariate_pdf(q_v)
 
     def cdf(pdf, grid):
-        weights = [pdf(i) for i in grid]
+        weights = pdf(grid)
         normalize_constant = np.sum(weights)
         weights /= normalize_constant
         cdf = np.cumsum(weights)
-        return list(cdf)
+        return cdf
 
     def invCDF(cdf, grid, u):
-        return grid[cdf.index(max(n for n in cdf  if n<u))]
+        return grid[np.where(cdf < u)[0][-1]]
 
     cdfq = cdf(univariate_pdf, grid_q)
 
@@ -140,7 +136,7 @@ def sigma2(Y, X, R2_v, q_v, z):
     betahat_v = betahat(Wtildeinv_v, Xtilde_v, Y)
     # Lorsqu'on regroupera, toute cette initialisation de variables _v ne sera évidemment à faire qu'une fois.
     return invgamma(T / 2, (
-            Y.T @ Y - betahat_v.T @ (Xtilde_v.T @ Xtilde_v + np.eye(sz_v) / gamma2_v @ betahat_v) / 2))  # Ytilde=Y
+            Y.T @ Y - betahat_v.T @ (Xtilde_v.T @ Xtilde_v + np.eye(sz_v) / gamma2_v @ betahat_v)) / 2)  # Ytilde=Y
 
 
 def betatilde(Y, X, R2_v, q_v, sigma2_v, z):
