@@ -32,18 +32,14 @@ X = zscore(X)
 beta_v = zscore(beta_v)
 epsilon = zscore(epsilon)
 Y = zscore(Y)
-(R2_v,q_v)=cp.R2q(X, z_v, beta_v, sigma2_v)()
-z_v=cp.z(Y,X,R2_v,q_v)(z_v)
+(R2_v, q_v) = cp.R2q(X, z_v, beta_v, sigma2_v)()
+z_v = cp.z(Y, X, R2_v, q_v)(z_v)
 print(z_v)
 
 R2_q = []
 for n in tqdm(range(100)):
-    
-    (R2_v,q_v)=cp.R2q(X, z_v, beta_v, sigma2_v)()
-    z_v=cp.z(Y,X,R2_v,q_v)(z_v)
-    sigma2_v=cp.sigma2(Y,X,R2_v,q_v,z_v)
-    beta_v=cp.betatilde(Y, X, R2_v, q_v, sigma2_v, z_v)
-    
-    
-    
-    
+    R2_v, q_v = cp.R2q(X, z_v, beta_v, sigma2_v)()
+    z_v = cp.z(Y, X, R2_v, q_v)(z_v)
+    pass
+    # sigma2_v = cp.sigma2(Y, X, R2_v, q_v, z_v)
+    # beta_v = cp.betatilde(Y, X, R2_v, q_v, sigma2_v, z_v)

@@ -32,8 +32,8 @@ def Wtilde(Xtilde_v, sz_v, gamma2_v):
     return Xtilde_v.T @ Xtilde_v + np.eye(sz_v) / gamma2_v
 
 
-def Xtilde(X, z):
-    return X[:, z == 1]
+def Xtilde(X, z_v):
+    return X[:, z_v == 1]
 
 
 def sigma2_data(beta_v, X, Ry):  # le sigma_2 qui serviraà générer le jeu de données.
@@ -89,28 +89,30 @@ def R2q(X, z, beta_v, sigma2_v):
 
 
 def z(Y, X, R2_v, q_v):
-    def pdf(z_v):
+    def logpdf(z_v):
         sz_v = sz(z_v)
         gamma2_v = gamma2(R2_v, q_v, X)
-        Xtilde_v = Xtilde(X, z)
+        Xtilde_v = Xtilde(X, z_v)
         Wtilde_v = Wtilde(Xtilde_v, sz_v, gamma2_v)
         Wtildeinv_v = np.linalg.inv(Wtilde_v)
         betahat_v = betahat(Wtildeinv_v, Xtilde_v, Y)
-        p = q_v ** sz_v * (1 - q_v) ** (k - sz_v) * (1 / gamma2_v) ** (sz_v / 2) * np.linalg.det(Wtildeinv_v) ** (1 / 2) \
-            * ((Y.T @ Y - betahat_v.T @ Wtilde_v @ betahat_v)/2) ** (-T / 2)
-        return p
+        logp = sz_v * np.log(q_v) + (k - sz_v) * np.log(1 - q_v) - sz_v / 2 * np.log(gamma2_v) - 1 / 2 * np.log(
+            np.linalg.det(Wtilde_v)) \
+               - T / 2 * np.log((Y.T @ Y - betahat_v.T @ Wtilde_v @ betahat_v) / 2)
+        return logp
 
     def pdf_exclusion(index, z):
-        p = pdf(z)
+        logp = logpdf(z)
         z[index] = 0
-        p0 = pdf(z)
+        logp0 = logpdf(z)
         z[index] = 1
-        p1 = pdf(z)
-        return p / (q_v * p1 + (1 - q_v) * p0)
+        logp1 = logpdf(z)
+        return logp - np.logaddexp(logp0 + np.log(q_v), logp1 + np.log(1 - q_v))
 
     def iter_gibbs(z):
         for i in range(k):
-            p = pdf_exclusion(i, z)
+            logp = pdf_exclusion(i, z)
+            p = np.exp(logp)
             u = np.random.uniform(0, 1)
             if u > p:
                 z[i] = 0
@@ -135,8 +137,9 @@ def sigma2(Y, X, R2_v, q_v, z):
     Wtildeinv_v = np.linalg.inv(Wtilde_v)
     betahat_v = betahat(Wtildeinv_v, Xtilde_v, Y)
     # Lorsqu'on regroupera, toute cette initialisation de variables _v ne sera évidemment à faire qu'une fois.
-    return invgamma(T / 2, (
-            Y.T @ Y - betahat_v.T @ (Xtilde_v.T @ Xtilde_v + np.eye(sz_v) / gamma2_v @ betahat_v)) / 2)  # Ytilde=Y
+    return invgamma(a=T / 2, scale=(
+                                           Y.T @ Y - betahat_v.T @ (Xtilde_v.T @ Xtilde_v + np.eye(
+                                       sz_v) / gamma2_v @ betahat_v)) / 2)  # Ytilde=Y
 
 
 def betatilde(Y, X, R2_v, q_v, sigma2_v, z):
@@ -148,4 +151,3 @@ def betatilde(Y, X, R2_v, q_v, sigma2_v, z):
     mean = invTerm @ Xtilde_v @ Y  # Pas de U*phi
     cov = invTerm * sigma2_v
     return mnormal(mean, cov)
-
