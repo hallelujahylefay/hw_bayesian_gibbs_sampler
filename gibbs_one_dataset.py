@@ -20,19 +20,30 @@ B = 1
 s_list = [5, 10, 100]
 Ry_list = [0.02, 0.25, 0.5]
 no_datasets = 100
-s = 10
+s = 5
 Ry = 0.02
 X = X_data()
-beta = beta_data(s)
-epsilon = epsilon_data(Ry, beta, X)
-Y = Y_data(X, beta, epsilon)
-sigma2_v = sigma2_data(Ry, beta, X)
-z = (beta != 0)
+beta_v = beta_data(s)
+epsilon = epsilon_data(Ry, beta_v, X)
+Y = Y_data(X, beta_v, epsilon)
+sigma2_v = sigma2_data(Ry, beta_v, X)
+z_v = (beta_v != 0)
 X = zscore(X)
-beta = zscore(beta)
+beta_v = zscore(beta_v)
 epsilon = zscore(epsilon)
 Y = zscore(Y)
+(R2_v,q_v)=cp.R2q(X, z_v, beta_v, sigma2_v)()
+z_v=cp.z(Y,X,R2_v,q_v)(z_v)
+print(z_v)
 
 R2_q = []
 for n in tqdm(range(100)):
-    cp.R2q(X, z, beta, sigma2_v)()
+    
+    (R2_v,q_v)=cp.R2q(X, z_v, beta_v, sigma2_v)()
+    z_v=cp.z(Y,X,R2_v,q_v)(z_v)
+    sigma2_v=cp.sigma2(Y,X,R2_v,q_v,z_v)
+    beta_v=cp.betatilde(Y, X, R2_v, q_v, sigma2_v, z_v)
+    
+    
+    
+    

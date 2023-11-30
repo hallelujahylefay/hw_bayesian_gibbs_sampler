@@ -89,15 +89,15 @@ def R2q(X, z, beta_v, sigma2_v):
 
 
 def z(Y, X, R2_v, q_v):
-    def pdf(z):
-        sz_v = sz(z)
+    def pdf(z_v):
+        sz_v = sz(z_v)
         gamma2_v = gamma2(R2_v, q_v, X)
         Xtilde_v = Xtilde(X, z)
         Wtilde_v = Wtilde(Xtilde_v, sz_v, gamma2_v)
         Wtildeinv_v = np.linalg.inv(Wtilde_v)
         betahat_v = betahat(Wtildeinv_v, Xtilde_v, Y)
         p = q_v ** sz_v * (1 - q_v) ** (k - sz_v) * (1 / gamma2_v) ** (sz_v / 2) * np.linalg.det(Wtildeinv_v) ** (1 / 2) \
-            * (Y.T @ Y - betahat_v.T @ Wtilde_v @ betahat_v) ** (-T / 2)
+            * ((Y.T @ Y - betahat_v.T @ Wtilde_v @ betahat_v)/2) ** (-T / 2)
         return p
 
     def pdf_exclusion(index, z):
@@ -148,3 +148,4 @@ def betatilde(Y, X, R2_v, q_v, sigma2_v, z):
     mean = invTerm @ Xtilde_v @ Y  # Pas de U*phi
     cov = invTerm * sigma2_v
     return mnormal(mean, cov)
+
