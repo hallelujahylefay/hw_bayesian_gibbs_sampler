@@ -64,10 +64,6 @@ def R2q(X, z, beta_v, sigma2_v):
         _univariate_pdf = lambda R2_v: joint_pdf(q_v, R2_v)
         return np.sum(_univariate_pdf(grid) * surface)
 
-    def conditional_pdf(q_v, R2_v):
-        # distribution of q conditional on R2, proportionate to the joint posterior
-        return joint_pdf(q_v, R2_v) / univariate_pdf(q_v)
-
     def cdf(pdf):
         weights = pdf(grid) * surface
         normalize_constant = np.sum(weights)
@@ -84,7 +80,7 @@ def R2q(X, z, beta_v, sigma2_v):
         u = np.random.uniform(0, 1)
         q_ = invCDF(cdfq, u)
 
-        cdfRconditiononq = cdf(lambda R: conditional_pdf(q_, R))
+        cdfRconditiononq = cdf(lambda R: joint_pdf(q_, R))
         v = np.random.uniform(0, 1)
         R_ = invCDF(cdfRconditiononq, v)
         return q_, R_
