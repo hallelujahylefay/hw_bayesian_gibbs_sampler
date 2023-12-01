@@ -37,6 +37,7 @@ def generate_dataset(s_list, Ry_list, no_datasets):
     for i in range(no_datasets):
         datasets[i] = dict()
         X = X_data()
+        X = (X - np.mean(X, axis=0)) / np.std(X, axis=0) #standardize the data
         datasets_X[i] = X
         for s in s_list:
             for Ry in Ry_list:
@@ -46,7 +47,6 @@ def generate_dataset(s_list, Ry_list, no_datasets):
                 z = (beta != 0)
                 q = np.sum(z) / k
                 Y = X @ beta + epsilon
-                # we standardize the data, column by column before putting it in our dataset.
                 datasets[i][(s, Ry)] = Y, beta, z, sigma2, q
 
     return datasets_X, datasets
