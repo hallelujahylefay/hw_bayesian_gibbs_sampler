@@ -1,6 +1,6 @@
-import numpy as np
 import random
-from scipy.stats import zscore
+from sklearn.linear_model import Lasso
+import numpy as np
 
 k = 100
 T = 200
@@ -43,12 +43,25 @@ def generate_dataset(s_list, Ry_list, no_datasets):
                 beta = beta_data(s)
                 sigma2 = sigma2_data(Ry, beta, X)
                 epsilon = np.random.normal(0, sigma2 ** 0.5, size=T)
-                Y = X @ beta + epsilon
                 z = (beta != 0)
-                X = zscore(X)
-                beta = zscore(beta)
-                Y = zscore(Y)
+                q = np.sum(z) / k
+                Y = X @ beta + epsilon
                 # we standardize the data, column by column before putting it in our dataset.
-                datasets[i][(s, Ry)] = Y, beta, z, sigma2
+                datasets[i][(s, Ry)] = Y, beta, z, sigma2, q
 
     return datasets_X, datasets
+
+
+def initialize_parameters(X, Y):
+    lasso_reg = Lasso(alpha=0.1, fit_intercept=False)
+    lasso_reg.fit(X, Y)
+    beta = lasso_reg.coef_
+    y_pred = lasso_reg.predict(X)
+    residuals = Y - y_pred
+    sigma2 = np.var(residuals)
+    print("sigma2 init:", sigma2)
+    z = np.where(beta != 0, True, False)
+    q = np.sum(z) / len(z)
+    print("q init:", q)
+    # gamma2 = np.var(beta[z.astype(bool)]) / sigma2
+    return z, beta, sigma2, q
