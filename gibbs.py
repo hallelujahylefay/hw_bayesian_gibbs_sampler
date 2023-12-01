@@ -17,7 +17,7 @@ def gibbs_per_block(X, Y, init, ITERATION=200, BURNIN_period=100):
         R2_v, q_v = cp.R2q(X, z_v, beta_v, sigma2_v)()
         z_v = cp.z(Y, X, R2_v, q_v)(z_v)
         sigma2_v = cp.sigma2(Y, X, R2_v, q_v, z_v)
-        beta_v_tilde = cp.betatilde(Y, X, R2_v, q_v, 1.0, z_v)
+        beta_v_tilde = cp.betatilde(Y, X, R2_v, q_v, sigma2_v, z_v)
         if n >= BURNIN_period:
             R2_vs[n - BURNIN_period] = R2_v
             q_vs[n - BURNIN_period] = q_v
