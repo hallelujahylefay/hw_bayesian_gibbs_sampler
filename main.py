@@ -1,18 +1,15 @@
 import pickle
-
-import numpy as np
-
 from gibbs import gibbs_per_block
 from simulate_data import generate_dataset, initialize_parameters
 
 k = 100
-s_list = [10]
-Ry_list = [0.25]
+s_list = [5, 10, 100]
+Ry_list = [0.02, 0.25, 0.5]
 no_datasets = 1
 datasetsX, datasets = generate_dataset(s_list, Ry_list, no_datasets)
 
-BURNIN_period = 100
-ITERATION = 500
+BURNIN_period = 10_000
+ITERATION = 10_000
 
 res = dict()
 for i in datasets.keys():
