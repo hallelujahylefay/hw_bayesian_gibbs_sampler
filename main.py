@@ -8,8 +8,8 @@ Ry_list = [0.02, 0.25, 0.5]
 no_datasets = 10
 datasetsX, datasets = generate_dataset(s_list, Ry_list, no_datasets)
 
-BURNIN_period = 10
-ITERATION = 50
+BURNIN_period = 1000
+ITERATION = 5000
 
 res = dict()
 for i in datasets.keys():
