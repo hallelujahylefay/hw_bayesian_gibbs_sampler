@@ -124,9 +124,7 @@ def z(Y, X, R2_v, q_v):
         for i in range(k):
             p = pdf_exclusion(i, z)
             if u[i] > p:
-                z[i] = 0
-            else:
-                z[i] = 1
+                z[i] = 1 - z[i]
         return z
 
     return gibbs
