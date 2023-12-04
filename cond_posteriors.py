@@ -151,7 +151,7 @@ def betatilde(Y, X, R2_v, q_v, sigma2_v, z_v):
     invTerm = np.linalg.inv(id / gamma2_v + Xtilde_v.T @ Xtilde_v)
     mean = invTerm @ Xtilde_v.T @ Y  # Pas de U*phi
     cov = invTerm * sigma2_v
-    sample = mnormal(mean, cov).rvs()
+    sample = mean + np.linalg.cholesky(cov) @ mnormal(np.zeros(shape=(sz_v, )), id).rvs()
     beta_v = np.zeros(shape=k)
     beta_v[z_v] = sample
     return beta_v
