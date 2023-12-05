@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.stats import gamma
+from scipy.stats import invgamma
 from scipy.stats import multivariate_normal as mnormal
 
 k = 100
@@ -48,16 +48,12 @@ def betahat(Wtilde_v, Xtilde_v, Y):
 def R2q(X, z, beta_v, sigma2_v):
     sz_v = sz(z)
     bz = beta_v @ np.diag(z) @ beta_v.T
-    # bz = np.einsum('i, i ->', beta_v ** 2, z)
     vbarX_v = vbar(X)
 
     def joint_pdf(q_v, R2_v):
         return np.exp((-bz / (2 * sigma2_v * gamma2(R2_v, q_v, vbarX_v)))) * q_v ** (
                 3 / 2 * sz_v + a - 1) * (
                        1 - q_v) ** (k - sz_v + b - 1) * R2_v ** (A - 1 - sz_v / 2) * (1 - R2_v) ** (sz_v / 2 + B - 1)
-        # return - bz / (2 * sigma2_v * gamma2(R2_v, q_v, X)) + (3 / 2 * sz_v + a - 1) * np.log(q_v) + ( \
-        #            k - sz_v + b - 1) * np.log(1 - q_v) + (A - 1 - sz_v / 2) * np.log(R2_v) + (
-        #               sz_v / 2 + B - 1) * np.log(1 - R2_v)
 
     @np.vectorize
     def univariate_pdf(q_v):
@@ -94,33 +90,41 @@ def R2q(X, z, beta_v, sigma2_v):
 def z(Y, X, R2_v, q_v, z_v):
     gamma2_v = gamma2(R2_v, q_v, vbar(X))
 
-    def logpdf(z_v):
+    def pdf_ratio(index, z_v):
+        """
+        Computhe the logratio up to proportionaly of P(Z_i = 1, Z_{-i}) / P(Z_i = 0, Z_{-i})
+        """
+        z_v[index] = 0
         sz_v = sz(z_v)
-        Xtilde_v = Xtilde(X, z_v)
-        Wtilde_v = Wtilde(Xtilde_v, sz_v, gamma2_v)
-        betahat_v = betahat(Wtilde_v, Xtilde_v, Y)
-        _, logdet = np.linalg.slogdet(Wtilde_v)
-        logp = sz_v * (np.log(q_v) - np.log(1 - q_v)) - sz_v / 2 * np.log(gamma2_v) - 1 / 2 * logdet \
-               - T / 2 * np.log((Y.T @ Y - betahat_v.T @ Wtilde_v @ betahat_v) / 2)
-        return logp
 
-    def logpdf_exclusion(index, z):
-        logp = logpdf(z)
+        Xtilde_v0 = Xtilde(X, z_v)
+        Wtilde_v0 = Wtilde(Xtilde_v0, sz_v, gamma2_v)
+        betahat_v0 = betahat(Wtilde_v0, Xtilde_v0, Y)
+        _, logdet0 = np.linalg.slogdet(Wtilde_v0)
+
+        z_v[index] = 1
+        Xtilde_v1 = Xtilde(X, z_v)
+        Wtilde_v1 = Wtilde(Xtilde_v1, sz_v, gamma2_v)
+        betahat_v1 = betahat(Wtilde_v1, Xtilde_v1, Y)
+        _, logdet1 = np.linalg.slogdet(Wtilde_v1)
+
+        Ysquared = Y.T @ Y
+
+        log_ratio = np.log(q_v) - np.log(1 - q_v) - 1 / 2 * np.log(gamma2_v) - 1 / 2 * (logdet1 - logdet0) - \
+                    T / 2(np.log(Ysquared - betahat_v1.T @ Wtilde_v1 @ betahat_v1) - np.log(
+            Ysquared - betahat_v0.T @ Wtilde_v0 @ betahat_v0))
+        ratio = np.exp(log_ratio)
+        return ratio
+
+    def pdf_exclusion(index, z):
+        """
+        P(z_i | z_{-i}) = 1 / (1+P(z_i | z_{-i})/P(1-z_i | z_{-i}))
+        """
+        ratio = pdf_ratio(z)
         zi = z[index]
         if zi == 0:
-            logp0 = logp
-            z[index] = 1
-            logp1 = logpdf(z)
-        else:
-            logp1 = logp
-            z[index] = 0
-            logp0 = logpdf(z)
-        z[index] = zi
-        return logp - np.logaddexp(logp0, logp1)
-        # return logp - np.logaddexp(logp0 + np.log(q_v), logp1 + np.log(1 - q_v))
-
-    def pdf_exclusion(i, z):
-        return np.exp(logpdf_exclusion(i, z))
+            return - np.log1p(ratio)
+        return - np.log1p(1 / ratio)
 
     def gibbs(z):
         u = np.random.uniform(0, 1, size=k)
@@ -140,10 +144,9 @@ def sigma2(Y, X, R2_v, q_v, z):
     Wtilde_v = Wtilde(Xtilde_v, sz_v, gamma2_v)
     betahat_v = betahat(Wtilde_v, Xtilde_v, Y)
     form = T / 2
-    param = (Y.T @ Y - betahat_v.T @ (Xtilde_v.T @ Xtilde_v + np.eye(sz_v) / gamma2_v) @ betahat_v) / 2
-    scale = 1 / param
+    param = (Y.T @ Y - betahat_v.T @ Wtilde_v @ betahat_v) / 2
     # Lorsqu'on regroupera, toute cette initialisation de variables _v ne sera évidemment à faire qu'une fois.
-    return 1 / (gamma(a=form).rvs() * scale)  # Ytilde=Y
+    return invgamma(a=form, scale=param).rvs()  # Ytilde=Y
 
 
 def betatilde(Y, X, R2_v, q_v, sigma2_v, z_v):
@@ -151,9 +154,10 @@ def betatilde(Y, X, R2_v, q_v, sigma2_v, z_v):
     gamma2_v = gamma2(R2_v, q_v, vbar(X))
     Xtilde_v = Xtilde(X, z_v)
     id = np.eye(sz_v)
-    invTerm = np.linalg.inv(id / gamma2_v + Xtilde_v.T @ Xtilde_v)
-    mean = invTerm @ Xtilde_v.T @ Y  # Pas de U*phi
-    cov = invTerm * sigma2_v
+    Wtilde_v = Wtilde(Xtilde_v, sz_v, gamma2_v)
+    Wtilde_v_inv = np.linalg.inv(Wtilde_v)
+    mean = Wtilde_v_inv @ Xtilde_v.T @ Y  # Pas de U*phi
+    cov = Wtilde_v_inv * sigma2_v
     sample = mnormal(mean, cov).rvs() if sz_v > 0 else np.array([])
     beta_v = np.zeros(shape=k)
     beta_v[z_v] = sample
