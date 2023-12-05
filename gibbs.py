@@ -13,7 +13,7 @@ def gibbs_per_block(X, Y, init, ITERATION=200, BURNIN_period=100):
     beta_vs = np.zeros((ITERATION, k))
 
     z_v, beta_v, sigma2_v, q_v = init
-    for n in range(ITERATION + BURNIN_period):
+    for n in tqdm(range(ITERATION + BURNIN_period)):
         R2_v, q_v = cp.R2q(X, z_v, beta_v, sigma2_v)
         z_v = cp.z(Y, X, R2_v, q_v, z_v)
         sigma2_v = cp.sigma2(Y, X, R2_v, q_v, z_v)

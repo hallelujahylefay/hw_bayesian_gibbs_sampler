@@ -21,8 +21,8 @@ surface[:-1] = np.sum(
 surface[-1] = surface[-2]
 
 
-def sz(z):
-    return np.sum(z)
+def sz(z_v):
+    return np.sum(z_v)
 
 
 def vbar(X):
@@ -77,12 +77,12 @@ def R2q(X, z, beta_v, sigma2_v):
 
     def sampleqR():
         u = np.random.uniform(0, 1)
-        q_ = invCDF(cdfq, u)
+        q = invCDF(cdfq, u)
 
-        cdfRconditiononq = cdf(lambda R: joint_pdf(q_, R))
+        cdfR2conditiononq = cdf(lambda R2: joint_pdf(q, R2))
         v = np.random.uniform(0, 1)
-        R_ = invCDF(cdfRconditiononq, v)
-        return R_, q_
+        R2 = invCDF(cdfR2conditiononq, v)
+        return R2, q
 
     return sampleqR()  # function that will be looped over to generate samples of (q, R) given X z
 
@@ -103,6 +103,7 @@ def z(Y, X, R2_v, q_v, z_v):
         _, logdet0 = np.linalg.slogdet(Wtilde_v0)
 
         z_v[index] = 1
+        sz_v += 1
         Xtilde_v1 = Xtilde(X, z_v)
         Wtilde_v1 = Wtilde(Xtilde_v1, sz_v, gamma2_v)
         betahat_v1 = betahat(Wtilde_v1, Xtilde_v1, Y)
@@ -111,7 +112,7 @@ def z(Y, X, R2_v, q_v, z_v):
         Ysquared = Y.T @ Y
 
         log_ratio = np.log(q_v) - np.log(1 - q_v) - 1 / 2 * np.log(gamma2_v) - 1 / 2 * (logdet1 - logdet0) - \
-                    T / 2(np.log(Ysquared - betahat_v1.T @ Wtilde_v1 @ betahat_v1) - np.log(
+                    T / 2 * (np.log(Ysquared - betahat_v1.T @ Wtilde_v1 @ betahat_v1) - np.log(
             Ysquared - betahat_v0.T @ Wtilde_v0 @ betahat_v0))
         ratio = np.exp(log_ratio)
         return ratio
@@ -120,11 +121,11 @@ def z(Y, X, R2_v, q_v, z_v):
         """
         P(z_i | z_{-i}) = 1 / (1+P(z_i | z_{-i})/P(1-z_i | z_{-i}))
         """
-        ratio = pdf_ratio(z)
+        ratio = pdf_ratio(index, z)
         zi = z[index]
         if zi == 0:
-            return - np.log1p(ratio)
-        return - np.log1p(1 / ratio)
+            return np.exp(- np.log1p(ratio))
+        return np.exp(- np.log1p(1 / ratio))
 
     def gibbs(z):
         u = np.random.uniform(0, 1, size=k)
@@ -143,17 +144,14 @@ def sigma2(Y, X, R2_v, q_v, z):
     Xtilde_v = Xtilde(X, z)
     Wtilde_v = Wtilde(Xtilde_v, sz_v, gamma2_v)
     betahat_v = betahat(Wtilde_v, Xtilde_v, Y)
-    form = T / 2
     param = (Y.T @ Y - betahat_v.T @ Wtilde_v @ betahat_v) / 2
-    # Lorsqu'on regroupera, toute cette initialisation de variables _v ne sera évidemment à faire qu'une fois.
-    return invgamma(a=form, scale=param).rvs()  # Ytilde=Y
+    return invgamma(a=T / 2, scale=param).rvs()
 
 
 def betatilde(Y, X, R2_v, q_v, sigma2_v, z_v):
     sz_v = sz(z_v)
     gamma2_v = gamma2(R2_v, q_v, vbar(X))
     Xtilde_v = Xtilde(X, z_v)
-    id = np.eye(sz_v)
     Wtilde_v = Wtilde(Xtilde_v, sz_v, gamma2_v)
     Wtilde_v_inv = np.linalg.inv(Wtilde_v)
     mean = Wtilde_v_inv @ Xtilde_v.T @ Y  # Pas de U*phi
