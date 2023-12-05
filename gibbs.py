@@ -3,6 +3,7 @@ import cond_posteriors as cp
 from tqdm import tqdm
 
 k = 100
+frequency = 100
 
 
 def gibbs_per_block(X, Y, init, ITERATION=200, BURNIN_period=100):
@@ -13,7 +14,9 @@ def gibbs_per_block(X, Y, init, ITERATION=200, BURNIN_period=100):
     beta_vs = np.zeros((ITERATION, k))
 
     z_v, beta_v, sigma2_v, q_v = init
-    for n in tqdm(range(ITERATION + BURNIN_period)):
+    for n in range(ITERATION + BURNIN_period):
+        if (n + 1) % frequency == 0:
+            print(f"Iter: {n + 1}")
         R2_v, q_v = cp.R2q(X, z_v, beta_v, sigma2_v)
         z_v = cp.z(Y, X, R2_v, q_v, z_v)
         sigma2_v = cp.sigma2(Y, X, R2_v, q_v, z_v)

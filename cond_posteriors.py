@@ -58,7 +58,10 @@ def R2q(X, z, beta_v, sigma2_v):
     @np.vectorize
     def univariate_pdf(q_v):
         # marginal of q, integrate joint posterior
-        _univariate_pdf = lambda R2_v: joint_pdf(q_v, R2_v)
+        @np.vectorize
+        def _univariate_pdf(R2_v):
+            return joint_pdf(q_v, R2_v)
+
         return np.sum(_univariate_pdf(grid) * surface)
 
     def cdf(pdf):
@@ -92,7 +95,7 @@ def z(Y, X, R2_v, q_v, z_v):
 
     def pdf_ratio(index, z_v):
         """
-        Computhe the logratio up to proportionaly of P(Z_i = 1, Z_{-i}) / P(Z_i = 0, Z_{-i})
+        Computhe the ratio of P(Z_i = 1, Z_{-i}) / P(Z_i = 0, Z_{-i})
         """
         z_v[index] = 0
         sz_v = sz(z_v)
@@ -111,7 +114,7 @@ def z(Y, X, R2_v, q_v, z_v):
 
         Ysquared = Y.T @ Y
 
-        log_ratio = np.log(q_v) - np.log(1 - q_v) - 1 / 2 * np.log(gamma2_v) - 1 / 2 * (logdet1 - logdet0) - \
+        log_ratio = np.log(q_v) - np.log1p(- q_v) - 1 / 2 * np.log(gamma2_v) - 1 / 2 * (logdet1 - logdet0) - \
                     T / 2 * (np.log(Ysquared - betahat_v1.T @ Wtilde_v1 @ betahat_v1) - np.log(
             Ysquared - betahat_v0.T @ Wtilde_v0 @ betahat_v0))
         ratio = np.exp(log_ratio)
@@ -122,8 +125,7 @@ def z(Y, X, R2_v, q_v, z_v):
         P(z_i | z_{-i}) = 1 / (1+P(z_i | z_{-i})/P(1-z_i | z_{-i}))
         """
         ratio = pdf_ratio(index, z)
-        zi = z[index]
-        if zi == 0:
+        if not z[index]:
             return np.exp(- np.log1p(ratio))
         return np.exp(- np.log1p(1 / ratio))
 

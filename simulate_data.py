@@ -15,7 +15,7 @@ def X_data(rho=0.75):
 def beta_data(s):
     beta = np.random.normal(0, 1, size=k)
     zeroes_position = random.sample(range(k),
-                                    k - s)  # s nombres, choisis au hasard entre 0 et k. les coordonnées correspondantes dans beta seront rendues nulles.
+                                    k - s)
     beta[zeroes_position] = 0
     return beta
 
@@ -33,12 +33,10 @@ def generate_dataset(s_list, Ry_list, no_datasets):
 
     # Triple liste: on itère sur les valeurs de s et de Ry pour créer un dataset
     datasets = dict()
-    datasets_X = np.zeros(shape=(no_datasets, T, k))
     for i in range(no_datasets):
         datasets[i] = dict()
         X = X_data()
         X = (X - np.mean(X, axis=0)) / np.std(X, axis=0) #standardize the data
-        datasets_X[i] = X
         for s in s_list:
             for Ry in Ry_list:
                 beta = beta_data(s)
@@ -47,9 +45,9 @@ def generate_dataset(s_list, Ry_list, no_datasets):
                 z = (beta != 0)
                 q = np.sum(z) / k
                 Y = X @ beta + epsilon
-                datasets[i][(s, Ry)] = Y, beta, z, sigma2, q
+                datasets[i][(s, Ry)] = X, Y, beta, z, sigma2, q
 
-    return datasets_X, datasets
+    return datasets
 
 
 def initialize_parameters(X, Y):
@@ -59,9 +57,7 @@ def initialize_parameters(X, Y):
     y_pred = lasso_reg.predict(X)
     residuals = Y - y_pred
     sigma2 = np.var(residuals)
-    print("sigma2 init:", sigma2)
     z = np.where(beta != 0, True, False)
     q = np.sum(z) / len(z)
-    print("q init:", q)
     # gamma2 = np.var(beta[z.astype(bool)]) / sigma2
     return z, beta, sigma2, q
