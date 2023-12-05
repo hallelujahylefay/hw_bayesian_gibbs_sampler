@@ -1,24 +1,4 @@
-import numpy as np
-from scipy.stats import invgamma
-from scipy.stats import multivariate_normal as mnormal
-
-k = 100
-T = 200
-l = 0.
-a = 1.
-b = 1.
-A = 1.
-B = 1.
-
-grid = [i for i in np.arange(0.001, 0.101, 0.001)]
-grid += [i for i in np.arange(0.11, 0.91, 0.01)]
-grid += [i for i in np.arange(0.901, 1, 0.001)]
-grid = np.array(grid, dtype=np.float64)
-surface = np.zeros(len(grid), dtype=np.float64)
-surface[:-1] = np.sum(
-    np.array([[(grid[i] - grid[i - 1]) * (grid[j] - grid[j - 1]) for i in range(1, len(grid))] for j in
-              range(1, len(grid))], dtype=np.float64), axis=1)
-surface[-1] = surface[-2]
+from GLOBALS import *
 
 
 def sz(z_v):
@@ -158,7 +138,7 @@ def sigma2(Y, X, R2_v, q_v, z):
     Wtilde_v = Wtilde(Xtilde_v, sz_v, gamma2_v)
     betahat_v = betahat(Wtilde_v, Xtilde_v, Y)
     param = (Y.T @ Y - betahat_v.T @ Wtilde_v @ betahat_v) / 2
-    return invgamma(a=T / 2, scale=param).rvs()
+    return 1 / np.random.gamma(shape=T / 2, scale=1 / param)
 
 
 def betatilde(Y, X, R2_v, q_v, sigma2_v, z_v):
@@ -169,7 +149,7 @@ def betatilde(Y, X, R2_v, q_v, sigma2_v, z_v):
     Wtilde_v_inv = np.linalg.inv(Wtilde_v)
     mean = Wtilde_v_inv @ Xtilde_v.T @ Y  # Pas de U*phi
     cov = Wtilde_v_inv * sigma2_v
-    sample = mnormal(mean, cov).rvs() if sz_v > 0 else np.array([])
+    sample = np.random.multivariate_normal(mean, cov) if sz_v > 0 else np.array([])
     beta_v = np.zeros(shape=k)
     beta_v[z_v] = sample
     return beta_v
