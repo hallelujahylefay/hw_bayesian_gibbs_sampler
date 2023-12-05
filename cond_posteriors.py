@@ -42,9 +42,7 @@ def Xtilde(X, z_v):
 
 
 def betahat(Wtilde_v, Xtilde_v, Y):
-    WtildeinvXtilde_v = np.linalg.solve(Wtilde_v, Xtilde_v.T)
-    betahat_v = WtildeinvXtilde_v @ Y
-    return betahat_v
+    return np.linalg.solve(Wtilde_v, Xtilde_v.T @ Y)
 
 
 def R2q(X, z, beta_v, sigma2_v):
@@ -72,7 +70,10 @@ def R2q(X, z, beta_v, sigma2_v):
         return cdf
 
     def invCDF(cdf, u):
-        return grid[np.where(cdf < u)[0][-1]]
+        a = np.where(cdf < u)[0]
+        if len(a)==0:
+            return grid[-1]
+        return grid[a[-1]]
 
     cdfq = cdf(univariate_pdf)
 
@@ -85,10 +86,10 @@ def R2q(X, z, beta_v, sigma2_v):
         R_ = invCDF(cdfRconditiononq, v)
         return q_, R_
 
-    return sampleqR  # function that will be looped over to generate samples of (q, R) given X z
+    return sampleqR()  # function that will be looped over to generate samples of (q, R) given X z
 
 
-def z(Y, X, R2_v, q_v):
+def z(Y, X, R2_v, q_v, z_v):
     gamma2_v = gamma2(R2_v, q_v, X)
 
     def logpdf(z_v):
@@ -127,7 +128,7 @@ def z(Y, X, R2_v, q_v):
                 z[i] = 1 - z[i]
         return z
 
-    return gibbs
+    return gibbs(z_v)
 
 
 def sigma2(Y, X, R2_v, q_v, z):
@@ -151,7 +152,7 @@ def betatilde(Y, X, R2_v, q_v, sigma2_v, z_v):
     invTerm = np.linalg.inv(id / gamma2_v + Xtilde_v.T @ Xtilde_v)
     mean = invTerm @ Xtilde_v.T @ Y  # Pas de U*phi
     cov = invTerm * sigma2_v
-    sample = mean + np.linalg.cholesky(cov) @ mnormal(np.zeros(shape=(sz_v, )), id).rvs()
+    sample = mnormal(mean, cov).rvs() if sz_v > 0 else np.array([])
     beta_v = np.zeros(shape=k)
     beta_v[z_v] = sample
     return beta_v
