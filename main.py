@@ -3,9 +3,9 @@ from gibbs import gibbs_per_block
 from simulate_data import generate_dataset, initialize_parameters
 from multiprocessing import Process
 
-s_list = [75]
+s_list = [100]
 Ry_list = [0.5]
-no_datasets = 2
+no_datasets = 1
 
 output_path = "./OK"
 multiprocess = False

@@ -47,24 +47,35 @@ def betahat(Wtilde_v, Xtilde_v, Y):
 
 def R2q(X, z, beta_v, sigma2_v):
     sz_v = sz(z)
-    bz = beta_v @ np.diag(z) @ beta_v.T
+    bz = beta_v.T @ np.diag(z) @ beta_v
     vbarX_v = vbar(X)
 
-    def joint_pdf(q_v, R2_v):
-        return np.exp((-bz / (2 * sigma2_v * gamma2(R2_v, q_v, vbarX_v)))) * q_v ** (
-                3 / 2 * sz_v + a - 1) * (
-                       1 - q_v) ** (k - sz_v + b - 1) * R2_v ** (A - 1 - sz_v / 2) * (1 - R2_v) ** (sz_v / 2 + B - 1)
+    def log_joint_pdf(q_v, R2_v):
+        return (-bz / (2 * sigma2_v * gamma2(R2_v, q_v, vbarX_v))) + np.log(q_v) * (3 / 2 * sz_v + a - 1) + \
+               np.log1p(-q_v) * (k - sz_v + b - 1) + np.log(R2_v) * (A - 1 - sz_v / 2) + np.log1p(-R2_v) * \
+               (sz_v / 2 + B - 1)
 
     @np.vectorize
     def univariate_pdf(q_v):
         # marginal of q, integrate joint posterior
         @np.vectorize
-        def _univariate_pdf(R2_v):
-            return joint_pdf(q_v, R2_v)
+        def _log_univariate_pdf(R2_v):
+            return log_joint_pdf(q_v, R2_v)
 
-        return np.sum(_univariate_pdf(grid) * surface)
+        log_univariate_pdf = _log_univariate_pdf(grid) + np.log(surface)
+        log_univariate_pdf -= np.max(log_univariate_pdf)
+        return np.sum(np.exp(log_univariate_pdf))
 
-    def cdf(pdf):
+    def cdf(pdf_or_logpdf, logpdf=False):
+        if logpdf:
+            logpdf = pdf_or_logpdf
+            logweights = logpdf(grid) + np.log(surface)
+            logweights -= np.max(logweights)
+            weights = np.exp(logweights)
+            cdf = np.cumsum(weights)
+            cdf /= cdf[-1]
+            return cdf
+        pdf = pdf_or_logpdf
         weights = pdf(grid) * surface
         cdf = np.cumsum(weights)
         cdf /= cdf[-1]
@@ -82,7 +93,7 @@ def R2q(X, z, beta_v, sigma2_v):
         u = np.random.uniform(0, 1)
         q = invCDF(cdfq, u)
 
-        cdfR2conditiononq = cdf(lambda R2: joint_pdf(q, R2))
+        cdfR2conditiononq = cdf(lambda R2: log_joint_pdf(q, R2), logpdf=True)
         v = np.random.uniform(0, 1)
         R2 = invCDF(cdfR2conditiononq, v)
         return R2, q
