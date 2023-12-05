@@ -29,8 +29,8 @@ def vbar(X):
     return np.mean(np.var(X, axis=0))
 
 
-def gamma2(R2_v, q_v, X):
-    return R2_v / (q_v * k * vbar(X) * (1 - R2_v))
+def gamma2(R2_v, q_v, vbarX_v):
+    return R2_v / (q_v * k * vbarX_v * (1 - R2_v))
 
 
 def Wtilde(Xtilde_v, sz_v, gamma2_v):
@@ -52,9 +52,12 @@ def R2q(X, z, beta_v, sigma2_v):
     vbarX_v = vbar(X)
 
     def joint_pdf(q_v, R2_v):
-        return np.exp((-1 / (2 * sigma2_v)) * (k * vbarX_v * q_v * ((1 - R2_v) / R2_v) * bz)) * q_v ** (
+        return np.exp((-bz / (2 * sigma2_v * gamma2(R2_v, q_v, vbarX_v)))) * q_v ** (
                 3 / 2 * sz_v + a - 1) * (
                        1 - q_v) ** (k - sz_v + b - 1) * R2_v ** (A - 1 - sz_v / 2) * (1 - R2_v) ** (sz_v / 2 + B - 1)
+        # return - bz / (2 * sigma2_v * gamma2(R2_v, q_v, X)) + (3 / 2 * sz_v + a - 1) * np.log(q_v) + ( \
+        #            k - sz_v + b - 1) * np.log(1 - q_v) + (A - 1 - sz_v / 2) * np.log(R2_v) + (
+        #               sz_v / 2 + B - 1) * np.log(1 - R2_v)
 
     @np.vectorize
     def univariate_pdf(q_v):
@@ -64,14 +67,13 @@ def R2q(X, z, beta_v, sigma2_v):
 
     def cdf(pdf):
         weights = pdf(grid) * surface
-        normalize_constant = np.sum(weights)
-        weights /= normalize_constant
         cdf = np.cumsum(weights)
+        cdf /= cdf[-1]
         return cdf
 
     def invCDF(cdf, u):
         a = np.where(cdf < u)[0]
-        if len(a)==0:
+        if len(a) == 0:
             return grid[-1]
         return grid[a[-1]]
 
@@ -84,13 +86,13 @@ def R2q(X, z, beta_v, sigma2_v):
         cdfRconditiononq = cdf(lambda R: joint_pdf(q_, R))
         v = np.random.uniform(0, 1)
         R_ = invCDF(cdfRconditiononq, v)
-        return q_, R_
+        return R_, q_
 
     return sampleqR()  # function that will be looped over to generate samples of (q, R) given X z
 
 
 def z(Y, X, R2_v, q_v, z_v):
-    gamma2_v = gamma2(R2_v, q_v, X)
+    gamma2_v = gamma2(R2_v, q_v, vbar(X))
 
     def logpdf(z_v):
         sz_v = sz(z_v)
@@ -133,7 +135,7 @@ def z(Y, X, R2_v, q_v, z_v):
 
 def sigma2(Y, X, R2_v, q_v, z):
     sz_v = sz(z)
-    gamma2_v = gamma2(R2_v, q_v, X)
+    gamma2_v = gamma2(R2_v, q_v, vbar(X))
     Xtilde_v = Xtilde(X, z)
     Wtilde_v = Wtilde(Xtilde_v, sz_v, gamma2_v)
     betahat_v = betahat(Wtilde_v, Xtilde_v, Y)
@@ -146,7 +148,7 @@ def sigma2(Y, X, R2_v, q_v, z):
 
 def betatilde(Y, X, R2_v, q_v, sigma2_v, z_v):
     sz_v = sz(z_v)
-    gamma2_v = gamma2(R2_v, q_v, X)
+    gamma2_v = gamma2(R2_v, q_v, vbar(X))
     Xtilde_v = Xtilde(X, z_v)
     id = np.eye(sz_v)
     invTerm = np.linalg.inv(id / gamma2_v + Xtilde_v.T @ Xtilde_v)
