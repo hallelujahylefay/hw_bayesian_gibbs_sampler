@@ -35,6 +35,11 @@ def R2q(X, z, beta_v, sigma2_v):
                 3 / 2 * sz_v + a - 1) * (
                        1 - q_v) ** (k - sz_v + b - 1) * R2_v ** (A - 1 - sz_v / 2) * (1 - R2_v) ** (sz_v / 2 + B - 1)
 
+    def log_joint_pdf(q_v, R2_v):
+        return (-bz / (2 * sigma2_v * gamma2(R2_v, q_v, vbarX_v))) + np.log(q_v) * (3 / 2 * sz_v + a - 1) + \
+                  np.log1p(-q_v) * (k - sz_v + b - 1) + np.log(R2_v) * (A - 1 - sz_v / 2) + np.log1p(-R2_v) * \
+                    (sz_v / 2 + B - 1)
+
     @np.vectorize
     def univariate_pdf(q_v):
         # marginal of q, integrate joint posterior
@@ -129,7 +134,7 @@ def z(Y, X, R2_v, q_v, z_v):
 
     def pdf_ratio(index, z_v):
         """
-        Computhe the ratio of P(Z_i = 1, Z_{-i}) / P(Z_i = 0, Z_{-i})
+        Computhe the ratio of P(z_i = 1, z_{-i}) / P(z_i = 0, z_{-i})
         """
         z_v[index] = 0
         sz_v = sz(z_v)
@@ -156,7 +161,7 @@ def z(Y, X, R2_v, q_v, z_v):
 
     def pdf_exclusion(index, z):
         """
-        P(z_i | z_{-i}) = 1 / (1+P(z_i | z_{-i})/P(1-z_i | z_{-i}))
+        P(z_i | z_{-i}) = 1 / (1+P(z_i, z_{-i})/P(1-z_i, z_{-i}))
         """
         ratio = pdf_ratio(index, z)
         if not z[index]:

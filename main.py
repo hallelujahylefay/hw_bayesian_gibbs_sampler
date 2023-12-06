@@ -3,15 +3,16 @@ from gibbs import gibbs_per_block
 from simulate_data import generate_dataset, initialize_parameters
 from multiprocessing import Process
 
-s_list = [100]
+s_list = [5]
 Ry_list = [0.5]
 no_datasets = 1
 
-output_path = "./OK"
+output_path = "./OK_2"
 multiprocess = False
+no_multi = 2
 
 BURNIN_period = 1000
-ITERATION = 1000
+ITERATION = 5000
 
 
 def run(dataset, identifier, output_path="."):
@@ -27,11 +28,14 @@ def run(dataset, identifier, output_path="."):
 if __name__ == "__main__":
     datasets = generate_dataset(s_list, Ry_list, no_datasets)
     if multiprocess:
-        procs = []
-        for i in datasets.keys():
-            procs.append(Process(target=run, args=(datasets[i], i, output_path)))
-        for proc in procs:
-            proc.start()
+        for j in range(no_datasets//no_multi):
+            procs = []
+            for i in range(no_multi * j, no_multi * (j+1)):
+                procs.append(Process(target=run, args=(datasets[i], i, output_path)))
+            for proc in procs:
+                proc.start()
+            for proc in procs:
+                proc.join()
     else:
         for i in datasets.keys():
             run(datasets[i], i, output_path)
