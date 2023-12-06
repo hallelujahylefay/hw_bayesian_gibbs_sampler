@@ -161,7 +161,7 @@ def z(Y, X, R2_v, q_v, z_v):
 
     def pdf_exclusion(index, z):
         """
-        P(z_i | z_{-i}) = 1 / (1+P(z_i, z_{-i})/P(1-z_i, z_{-i}))
+        P(z_i | z_{-i}) = 1 / (1+P(1-z_i, z_{-i})/P(z_i, z_{-i}))
         """
         ratio = pdf_ratio(index, z)
         if not z[index]:
