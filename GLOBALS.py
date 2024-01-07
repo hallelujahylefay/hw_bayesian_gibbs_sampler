@@ -24,7 +24,6 @@ weights = ds.ravel()
 # Grid of values for R2,q
 R2_list, q_list = np.meshgrid(grid, grid) # q_list[0]=[0.001, 279 fois]. Ry_list[0]=discretization_grid.
 R2_list, q_list = R2_list.ravel(), q_list.ravel() # R2_list=[[0.001,...,0.999], 279 fois] . q_list= [0.001 279 fois, 0.002 279 fois, ... , 0.999 279 fois]
-weights = np.outer(weights, weights).ravel() # np.outer = produit pointé, puis sous forme de liste
 
 
 block1_logfactor_R2 = 0.5 * (-np.log(R2_list) + np.log(1-R2_list))
