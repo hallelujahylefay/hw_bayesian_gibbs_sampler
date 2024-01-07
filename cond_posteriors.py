@@ -29,10 +29,9 @@ def R2q(X, z, beta_v, sigma2_v):
     sz_v = sz(z)
     bz = beta_v @ np.diag(z) @ beta_v.T
     vbarX_v = vbar(X)
-
     #joint_pdf supprimée, _log_joint_pdf supprimée
     #univariate_pdf, cdf, invCDF, sampleqR supprimées
-    logprobas = bz / (2 * sigma2_v * gamma2(R2_list, q_list, vbarX_v))
+    logprobas =-bz / (2 * sigma2_v * gamma2(R2_list, q_list, vbarX_v))
     logprobas += sz_v*(block1_logfactor_R2+block1_logfactor_q)
     
     logprobas += logweights
