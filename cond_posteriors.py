@@ -30,46 +30,18 @@ def R2q(X, z, beta_v, sigma2_v):
     bz = beta_v @ np.diag(z) @ beta_v.T
     vbarX_v = vbar(X)
 
-    def joint_pdf(q_v, R2_v):
-        return np.exp((-bz / (2 * sigma2_v * gamma2(R2_v, q_v, vbarX_v)))) * q_v ** (
-                3 / 2 * sz_v + a - 1) * (
-                       1 - q_v) ** (k - sz_v + b - 1) * R2_v ** (A - 1 - sz_v / 2) * (1 - R2_v) ** (sz_v / 2 + B - 1)
-
-    def log_joint_pdf(q_v, R2_v):
-        return (-bz / (2 * sigma2_v * gamma2(R2_v, q_v, vbarX_v))) + np.log(q_v) * (3 / 2 * sz_v + a - 1) + \
-                  np.log1p(-q_v) * (k - sz_v + b - 1) + np.log(R2_v) * (A - 1 - sz_v / 2) + np.log1p(-R2_v) * \
-                    (sz_v / 2 + B - 1)
-
-    @np.vectorize
-    def univariate_pdf(q_v):
-        # marginal of q, integrate joint posterior
-        _univariate_pdf = lambda R2_v: joint_pdf(q_v, R2_v)
-        return np.sum(_univariate_pdf(grid) * dx)
-
-    def cdf(pdf):
-        weights = pdf(grid) * dx
-        cdf = np.cumsum(weights)
-        cdf /= cdf[-1]
-        return cdf
-
-    def invCDF(cdf, u):
-        a = np.where(cdf < u)[0]
-        if len(a) == 0:
-            return grid[-1]
-        return grid[a[-1]]
-
-    cdfq = cdf(univariate_pdf)
-
-    def sampleqR():
-        u = np.random.uniform(0, 1)
-        q = invCDF(cdfq, u)
-
-        cdfR2conditiononq = cdf(lambda R2: joint_pdf(q, R2))
-        v = np.random.uniform(0, 1)
-        R2 = invCDF(cdfR2conditiononq, v)
-        return R2, q
-
-    return sampleqR()  # function that will be looped over to generate samples of (q, R) given X z
+   #joint_pdf supprimée, _log_joint_pdf supprimée
+    #univariate_pdf, cdf, invCDF, sampleqR supprimées
+    logprobas = bz / (2 * sigma2_v * gamma2(R2_v, q_v, vbarX_v))
+    logprobas += sz_v*(block1_logfactor_R2+block1_logfactor_q)
+    
+    logprobas += logweights
+    logprobas -= np.max(logprobas) # pour éviter des erreurs d'arrondis
+    probas = np.exp(logprobas)
+    probas /= np.sum(probas)
+    idx = np.random.choice(range(len(probas)), p=probas)
+    return R2_list[idx], q_list[idx]
+    # function that will be looped over to generate samples of (q, R) given X z
 
 
 """
