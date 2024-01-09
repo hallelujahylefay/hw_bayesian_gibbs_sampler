@@ -7,7 +7,7 @@ s_list = [5]
 Ry_list = [0.5]
 no_datasets = 1
 
-output_path = "./OK_2"
+output_path = "./"
 multiprocess = False
 no_multi = 2
 

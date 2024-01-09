@@ -10,7 +10,7 @@ def vbar(X):
 
 
 def gamma2(R2_v, q_v, vbarX_v):
-    return q_v * k * vbarX_v * (1 - R2_v) / R2_v
+    return R2_v / (q_v * k * vbarX_v * (1 - R2_v))
 
 
 def Wtilde(Xtilde_v, sz_v, gamma2_v):
@@ -27,77 +27,16 @@ def betahat(Wtilde_v, Xtilde_v, Y):
 
 def R2q(X, z, beta_v, sigma2_v):
     sz_v = sz(z)
-    bz = float(beta_v.T @ np.diag(z) @ beta_v)
+    bz = beta_v.T @ np.diag(z) @ beta_v
     vbarX_v = vbar(X)
-    #joint_pdf supprimée, _log_joint_pdf supprimée
-    #univariate_pdf, cdf, invCDF, sampleqR supprimées
-    logprobas =- 0.5 /  sigma2_v * gamma2(R2_list, q_list, vbarX_v)*bz
-    logprobas += sz_v*block1_logfactor_R2
-    logprobas += k * block1_logfactor_q
+    logprobas = - bz / (2 * sigma2_v * gamma2(R2_list, q_list, vbarX_v))
+    logprobas += sz_v * block1_logfactor_R2
     logprobas += logweights
-    logprobas -= np.max(logprobas) # pour éviter des erreurs d'arrondis
+    logprobas -= np.max(logprobas)
     probas = np.exp(logprobas)
     probas /= np.sum(probas)
     idx = np.random.choice(range(len(probas)), p=probas)
     return R2_list[idx], q_list[idx]
-    # function that will be looped over to generate samples of (q, R) given X z
-
-
-"""
-def R2q(X, z, beta_v, sigma2_v):
-    sz_v = sz(z)
-    bz = beta_v.T @ np.diag(z) @ beta_v
-    vbarX_v = vbar(X)
-
-    def log_joint_pdf(q_v, R2_v):
-        return (-bz / (2 * sigma2_v * gamma2(R2_v, q_v, vbarX_v))) + np.log(q_v) * (3 / 2 * sz_v + a - 1) + \
-               np.log1p(-q_v) * (k - sz_v + b - 1) + np.log(R2_v) * (A - 1 - sz_v / 2) + np.log1p(-R2_v) * \
-               (sz_v / 2 + B - 1)
-
-    @np.vectorize
-    def univariate_pdf(q_v):
-        # marginal of q, integrate joint posterior
-        def _log_univariate_pdf(R2_v):
-            return log_joint_pdf(q_v, R2_v)
-
-        log_univariate_pdf = _log_univariate_pdf(grid) + np.log(dx)
-        log_univariate_pdf -= np.max(log_univariate_pdf)
-        return np.sum(np.exp(log_univariate_pdf))
-
-    def cdf(pdf_or_logpdf, logpdf=False):
-        if logpdf:
-            logpdf = pdf_or_logpdf
-            logweights = logpdf(grid) + np.log(dx)
-            logweights -= np.max(logweights)
-            weights = np.exp(logweights)
-            cdf = np.cumsum(weights)
-            cdf /= cdf[-1]
-            return cdf
-        pdf = pdf_or_logpdf
-        weights = pdf(grid) * dx
-        cdf = np.cumsum(weights)
-        cdf /= cdf[-1]
-        return cdf
-
-    def invCDF(cdf, u):
-        a = np.where(cdf < u)[0]
-        if len(a) == 0:
-            return grid[-1]
-        return grid[a[-1]]
-
-    cdfq = cdf(univariate_pdf)
-
-    def sampleqR():
-        u = np.random.uniform(0, 1)
-        q = invCDF(cdfq, u)
-
-        cdfR2conditiononq = cdf(lambda R2: log_joint_pdf(q, R2), logpdf=True)
-        v = np.random.uniform(0, 1)
-        R2 = invCDF(cdfR2conditiononq, v)
-        return R2, q
-
-    return sampleqR()  # function that will be looped over to generate samples of (q, R) given X z
-"""
 
 
 def z(Y, X, R2_v, q_v, z_v):
