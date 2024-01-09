@@ -10,7 +10,7 @@ def vbar(X):
 
 
 def gamma2(R2_v, q_v, vbarX_v):
-    return R2_v / (q_v * k * vbarX_v * (1 - R2_v))
+    return q_v * k * vbarX_v * (1 - R2_v) / R2_v
 
 
 def Wtilde(Xtilde_v, sz_v, gamma2_v):
@@ -27,13 +27,13 @@ def betahat(Wtilde_v, Xtilde_v, Y):
 
 def R2q(X, z, beta_v, sigma2_v):
     sz_v = sz(z)
-    bz = beta_v @ np.diag(z) @ beta_v.T
+    bz = float(beta_v.T @ np.diag(z) @ beta_v)
     vbarX_v = vbar(X)
     #joint_pdf supprimée, _log_joint_pdf supprimée
     #univariate_pdf, cdf, invCDF, sampleqR supprimées
-    logprobas =-bz / (2 * sigma2_v * gamma2(R2_list, q_list, vbarX_v))
-    logprobas += sz_v*(block1_logfactor_R2+block1_logfactor_q)
-    
+    logprobas =- 0.5 /  sigma2_v * gamma2(R2_list, q_list, vbarX_v)*bz
+    logprobas += sz_v*block1_logfactor_R2
+    logprobas += k * block1_logfactor_q
     logprobas += logweights
     logprobas -= np.max(logprobas) # pour éviter des erreurs d'arrondis
     probas = np.exp(logprobas)
