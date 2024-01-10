@@ -31,6 +31,7 @@ def R2q(X, z, beta_v, sigma2_v):
     vbarX_v = vbar(X)
     logprobas = - bz / (2 * sigma2_v * gamma2(R2_list, q_list, vbarX_v))
     logprobas += sz_v * block1_logfactor_R2
+    logprobas += k * block2_logfactor_R2
     logprobas += logweights
     logprobas -= np.max(logprobas)
     probas = np.exp(logprobas)

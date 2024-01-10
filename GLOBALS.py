@@ -21,3 +21,4 @@ weights = np.outer(weights, weights).ravel()
 logweights = np.log(weights)
 
 block1_logfactor_R2 = 1.5 * np.log(q_list) - np.log(1 - q_list) + 0.5 * (np.log(1 - R2_list) - np.log(R2_list))
+block2_logfactor_R2 = np.log(1 - q_list)
