@@ -2,7 +2,7 @@ import numpy as np
 import cond_posteriors_ps as cp
 from tqdm import tqdm
 
-k = 127
+k = 126
 frequency = 100
 
 
