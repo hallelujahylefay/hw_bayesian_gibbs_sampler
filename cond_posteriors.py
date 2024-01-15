@@ -20,11 +20,14 @@ def Wtilde(Xtilde_v, sz_v, gamma2_v):
 def Xtilde(X, z_v):
     return X[:, z_v.astype(bool)]
 
+def Ytilde(Y,U,phi):
+    return Y-U@phi
 
-def betahat(Wtilde_v, Xtilde_v, Y):
-    return np.linalg.solve(Wtilde_v, Xtilde_v.T @ Y)
 
+def betahat(Wtilde_v, Xtilde_v, Ytilde_v):
+    return np.linalg.solve(Wtilde_v, Xtilde_v.T @ Ytilde_v)
 
+#Step 1
 def R2q(X, z, beta_v, sigma2_v):
     sz_v = sz(z)
     bz = beta_v.T @ np.diag(z) @ beta_v
@@ -39,20 +42,30 @@ def R2q(X, z, beta_v, sigma2_v):
     idx = np.random.choice(range(len(probas)), p=probas)
     return R2_list[idx], q_list[idx]
 
+#Step 2
+def phi(Y,U,X,beta_v,sigma2_v):
+    gram_U = U.T@U
+    right = Y-X@beta_v #right term
+    mean = np.linalg.solve(gram_U, U.T @ right)
+    cov = sigma2_v*np.linalg.inv(gram_U)
+    return np.random.multivariate_normal(mean,cov)
 
-def z(Y, X, R2_v, q_v, z_v):
+
+#Step 3.
+def z(Y,U, X,phi, R2_v, q_v, z_v):
     gamma2_v = gamma2(R2_v, q_v, vbar(X))
 
     def pdf_ratio(index, z_v):
         """
-        Computhe the ratio of P(z_i = 1, z_{-i}) / P(z_i = 0, z_{-i})
+        Computes the the ratio of P(z_i = 1, z_{-i}) / P(z_i = 0, z_{-i})
         """
         z_v[index] = 0
         sz_v = sz(z_v)
+        Ytilde_v = Ytilde(Y,U,phi)
 
         Xtilde_v0 = Xtilde(X, z_v)
         Wtilde_v0 = Wtilde(Xtilde_v0, sz_v, gamma2_v)
-        betahat_v0 = betahat(Wtilde_v0, Xtilde_v0, Y)
+        betahat_v0 = betahat(Wtilde_v0, Xtilde_v0, Ytilde_v)
         _, logdet0 = np.linalg.slogdet(Wtilde_v0)
 
         z_v[index] = 1
@@ -61,8 +74,7 @@ def z(Y, X, R2_v, q_v, z_v):
         Wtilde_v1 = Wtilde(Xtilde_v1, sz_v, gamma2_v)
         betahat_v1 = betahat(Wtilde_v1, Xtilde_v1, Y)
         _, logdet1 = np.linalg.slogdet(Wtilde_v1)
-
-        Ysquared = Y.T @ Y
+        Ysquared = Ytilde_v.T @ Ytilde_v
 
         log_ratio = np.log(q_v) - np.log1p(- q_v) - 1 / 2 * np.log(gamma2_v) - 1 / 2 * (logdet1 - logdet0) - \
                     T / 2 * (np.log(Ysquared - betahat_v1.T @ Wtilde_v1 @ betahat_v1) - np.log(
@@ -89,24 +101,26 @@ def z(Y, X, R2_v, q_v, z_v):
 
     return gibbs(z_v)
 
-
-def sigma2(Y, X, R2_v, q_v, z):
+#Step 4
+def sigma2(Y, U, X,phi, R2_v, q_v, z):
     sz_v = sz(z)
     gamma2_v = gamma2(R2_v, q_v, vbar(X))
+    Ytilde_v = Ytilde(Y,U,phi)
     Xtilde_v = Xtilde(X, z)
     Wtilde_v = Wtilde(Xtilde_v, sz_v, gamma2_v)
-    betahat_v = betahat(Wtilde_v, Xtilde_v, Y)
-    param = (Y.T @ Y - betahat_v.T @ Wtilde_v @ betahat_v) / 2
+    betahat_v = betahat(Wtilde_v, Xtilde_v, Ytilde_v)
+    param = (Ytilde_v.T @ Ytilde_v - betahat_v.T @ Wtilde_v @ betahat_v) / 2
     return 1 / np.random.gamma(shape=T / 2, scale=1 / param)
 
-
-def betatilde(Y, X, R2_v, q_v, sigma2_v, z_v):
+#Step 5
+def betatilde(Y, U, X, phi, R2_v, q_v, sigma2_v, z_v):
     sz_v = sz(z_v)
     gamma2_v = gamma2(R2_v, q_v, vbar(X))
     Xtilde_v = Xtilde(X, z_v)
+    Ytilde_v = Ytilde(Y,U,phi)
     Wtilde_v = Wtilde(Xtilde_v, sz_v, gamma2_v)
     Wtilde_v_inv = np.linalg.inv(Wtilde_v)
-    mean = Wtilde_v_inv @ Xtilde_v.T @ Y  # Pas de U*phi
+    mean = Wtilde_v_inv @ Xtilde_v.T @ (Ytilde_v)
     cov = Wtilde_v_inv * sigma2_v
     sample = np.random.multivariate_normal(mean, cov) if sz_v > 0 else np.array([])
     beta_v = np.zeros(shape=k)
