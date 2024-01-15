@@ -1,8 +1,8 @@
 import numpy as np
 
-k = 100
-T = 200
-l = 0.
+k = 127 
+T = 376
+l = 1.
 a = 1.
 b = 1.
 A = 1.
