@@ -21,7 +21,7 @@ def Xtilde(X, z_v):
     return X[:, z_v.astype(bool)]
 
 def Ytilde(Y,U,phi):
-    return Y-U@phi
+    return Y-U*phi
 
 
 def betahat(Wtilde_v, Xtilde_v, Ytilde_v):
@@ -46,9 +46,9 @@ def R2q(X, z, beta_v, sigma2_v):
 def phi(Y,U,X,beta_v,sigma2_v):
     gram_U = U.T@U
     right = Y-X@beta_v #right term
-    mean = np.linalg.solve(gram_U, U.T @ right)
-    cov = sigma2_v*np.linalg.inv(gram_U)
-    return np.random.multivariate_normal(mean,cov)
+    mean = float((1/gram_U)*U.T@right)
+    cov = sigma2_v*(1/gram_U)
+    return np.random.normal(mean,cov)
 
 
 #Step 3.
