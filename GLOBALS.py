@@ -1,6 +1,6 @@
 import numpy as np
 
-k = 127 
+k = 126
 T = 376
 l = 1.
 a = 1.
