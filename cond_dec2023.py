@@ -154,7 +154,7 @@ def betatilde(Y, U, X, phi, R2_v, q_v, sigma2_v, z_v):
     sz_v = sz(z_v)
     gamma2_v = gamma2(R2_v, q_v, vbar(X))
     Xtilde_v = Xtilde(X, z_v)
-    Ytilde_v = Ytilide(Y,U,phi)
+    Ytilde_v = Ytilde(Y,U,phi)
     Wtilde_v = Wtilde(Xtilde_v, sz_v, gamma2_v)
     Wtilde_v_inv = np.linalg.inv(Wtilde_v)
     mean = Wtilde_v_inv @ Xtilde_v.T @ Ytilde_v  # Pas de U*phi
