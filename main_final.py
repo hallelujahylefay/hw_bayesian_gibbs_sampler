@@ -64,6 +64,6 @@ l1 = ax.lines[0]
 x1 = l1.get_xydata()[:,0]
 y1 = l1.get_xydata()[:,1]
 plt.fill_between(x1,y1, alpha=0.5, color='#1f77b4')
-plt.title('Distribution of q'))
+plt.title('Distribution of q')
 plt.xlim([0,1])
 plt.show()

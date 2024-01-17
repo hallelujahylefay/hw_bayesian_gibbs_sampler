@@ -1,5 +1,5 @@
 import numpy as np
-import cond_posteriors_ps as cp
+import cond_posteriors as cp
 from tqdm import tqdm
 
 k = 126
