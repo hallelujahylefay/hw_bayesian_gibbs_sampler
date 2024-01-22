@@ -74,3 +74,15 @@ plt.axhline(y=incl.quantile(q=0.25), color='green')
 
 plt.title("Frequency of inclusion for each feature ")
 legend = ax.legend(loc='upper right')
+
+#
+included_values = df_inc.sort_values(by='Frequency of inclusion',ascending=False)
+
+included_values.head(10)
+
+included_values.tail(10)
+
+#%%
+
+high_corr_per_var.sort_values().tail(10)
+high_corr_per_var.sort_values().head(10)
